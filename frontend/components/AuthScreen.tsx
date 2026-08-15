@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { Logo } from "./icons";
 import type { AuthMode } from "../lib/types";
 
@@ -10,12 +13,36 @@ export function AuthScreen({
   authMode: AuthMode;
   onSetLogin: () => void;
   onSetSignup: () => void;
-  onSubmit: () => void;
+  onSubmit: (fields: { name: string; email: string; password: string }) => Promise<void>;
 }) {
   const isLogin = authMode === "login";
   const isSignup = authMode === "signup";
   const authCta = isLogin ? "Log in" : "Create account";
   const authFootnote = isLogin ? "No account yet? Switch to sign up." : "Free plan, ten specs a month. No card.";
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    setError(null);
+    setSubmitting(true);
+    try {
+      await onSubmit({ name, email, password });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const switchMode = (next: AuthMode) => {
+    setError(null);
+    if (next === "login") onSetLogin();
+    else onSetSignup();
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--color-bg)" }}>
@@ -38,23 +65,40 @@ export function AuthScreen({
           <div style={{ width: "100%", maxWidth: 372, display: "grid", gap: 20, padding: 28, borderRadius: "var(--radius-lg)", background: "color-mix(in srgb, var(--color-surface) 88%, transparent)", boxShadow: "var(--shadow-md)", backdropFilter: "blur(14px)" }}>
             <div className="seg" style={{ width: "100%" }}>
               <label className="seg-opt" style={{ flex: 1, justifyContent: "center" }}>
-                <input type="radio" name="authmode" checked={isLogin} onChange={onSetLogin} />
+                <input type="radio" name="authmode" checked={isLogin} onChange={() => switchMode("login")} />
                 Log in
               </label>
               <label className="seg-opt" style={{ flex: 1, justifyContent: "center" }}>
-                <input type="radio" name="authmode" checked={isSignup} onChange={onSetSignup} />
+                <input type="radio" name="authmode" checked={isSignup} onChange={() => switchMode("signup")} />
                 Sign up
               </label>
             </div>
             <div style={{ display: "grid", gap: 12 }}>
               {isSignup && (
-                <div className="field"><label>Name</label><input className="input" placeholder="Priya Raman" /></div>
+                <div className="field">
+                  <label>Name</label>
+                  <input className="input" placeholder="Priya Raman" value={name} onChange={(e) => setName(e.target.value)} />
+                </div>
               )}
-              <div className="field"><label>Email</label><input className="input" type="email" placeholder="you@studio.com" /></div>
-              <div className="field"><label>Password</label><input className="input" type="password" placeholder="••••••••••" /></div>
+              <div className="field">
+                <label>Email</label>
+                <input className="input" type="email" placeholder="you@studio.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+              <div className="field">
+                <label>Password</label>
+                <input className="input" type="password" placeholder="••••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
+              </div>
             </div>
+            {error && <p style={{ margin: 0, fontSize: 12, color: "var(--color-accent)" }}>{error}</p>}
             <div style={{ display: "grid", gap: 10 }}>
-              <a href="#" className="btn btn-primary btn-block" style={{ padding: 10 }} onClick={(e) => { e.preventDefault(); onSubmit(); }}>{authCta}</a>
+              <a
+                href="#"
+                className="btn btn-primary btn-block"
+                style={{ padding: 10, opacity: submitting ? 0.7 : 1, pointerEvents: submitting ? "none" : "auto" }}
+                onClick={(e) => { e.preventDefault(); handleSubmit(); }}
+              >
+                {submitting ? "Please wait…" : authCta}
+              </a>
               <p className="text-muted" style={{ fontSize: 12, margin: 0, textAlign: "center" }}>{authFootnote}</p>
             </div>
           </div>

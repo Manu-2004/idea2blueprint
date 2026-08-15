@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createSpecJob, getSpecJob } from "../lib/api";
+import { clearToken, createSpecJob, getSpecJob, getToken, listSpecJobs } from "../lib/api";
+import { login, logout as logoutRequest, me, signup } from "../lib/auth";
 import { QUESTIONS, SAMPLE_SPEC, TEMPLATES } from "../lib/data";
-import type { AuthMode, FormFields, JobError, Screen, Spec } from "../lib/types";
+import type { AuthMode, FormFields, JobError, Screen, Spec, SpecJobSummary, User } from "../lib/types";
 import { Landing } from "../components/Landing";
 import { AuthScreen } from "../components/AuthScreen";
 import { AppShell } from "../components/AppShell";
@@ -19,6 +20,8 @@ const POLL_INTERVAL_MS = 2000;
 export default function Home() {
   const [screen, setScreen] = useState<Screen>("landing");
   const [authMode, setAuthMode] = useState<AuthMode>("signup");
+  const [authChecked, setAuthChecked] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const [form, setForm] = useState<FormFields>({ ...TEMPLATES.saas.form });
   const [formSource, setFormSource] = useState("Blank spec");
   const [step, setStep] = useState(0);
@@ -27,9 +30,37 @@ export default function Home() {
   const [revisionRound, setRevisionRound] = useState(0);
   const [maxRevisionRounds, setMaxRevisionRounds] = useState(0);
   const [spec, setSpec] = useState<Spec | null>(null);
+  const [specs, setSpecs] = useState<SpecJobSummary[]>([]);
+  const [specsLoading, setSpecsLoading] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [format, setFormat] = useState("PDF");
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      setAuthChecked(true);
+      return;
+    }
+    me()
+      .then((u) => {
+        setUser(u);
+        setScreen("dashboard");
+      })
+      .catch(() => clearToken())
+      .finally(() => setAuthChecked(true));
+  }, []);
+
+  useEffect(() => {
+    if (screen !== "dashboard" || !user) return;
+    setSpecsLoading(true);
+    listSpecJobs()
+      .then(setSpecs)
+      .catch(() => setSpecs([]))
+      .finally(() => setSpecsLoading(false));
+  }, [screen, user]);
+
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
   const go = (next: Screen) => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -47,6 +78,34 @@ export default function Home() {
     setScreen("new");
   };
 
+  const pollJob = (jobId: string) => {
+    if (timerRef.current) clearInterval(timerRef.current);
+
+    const tick = async () => {
+      try {
+        const job = await getSpecJob(jobId);
+        setGenStep((prev) => Math.max(prev, job.progress.step));
+        setRevisionRound(job.progress.revision_round);
+        setMaxRevisionRounds(job.progress.max_revision_rounds);
+
+        if (job.status === "done" && job.spec) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          setSpec(job.spec);
+          go("spec");
+        } else if (job.status === "failed") {
+          if (timerRef.current) clearInterval(timerRef.current);
+          setGenError(job.error ?? { type: "internal_error", message: "Something went wrong generating the spec." });
+        }
+      } catch {
+        if (timerRef.current) clearInterval(timerRef.current);
+        setGenError({ type: "internal_error", message: "Lost connection while generating your spec." });
+      }
+    };
+
+    tick();
+    timerRef.current = setInterval(tick, POLL_INTERVAL_MS);
+  };
+
   const generate = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     setGenStep(0);
@@ -56,28 +115,7 @@ export default function Home() {
     setScreen("generating");
 
     createSpecJob(form)
-      .then(({ job_id }) => {
-        timerRef.current = setInterval(async () => {
-          try {
-            const job = await getSpecJob(job_id);
-            setGenStep((prev) => Math.max(prev, job.progress.step));
-            setRevisionRound(job.progress.revision_round);
-            setMaxRevisionRounds(job.progress.max_revision_rounds);
-
-            if (job.status === "done" && job.spec) {
-              if (timerRef.current) clearInterval(timerRef.current);
-              setSpec(job.spec);
-              go("spec");
-            } else if (job.status === "failed") {
-              if (timerRef.current) clearInterval(timerRef.current);
-              setGenError(job.error ?? { type: "internal_error", message: "Something went wrong generating the spec." });
-            }
-          } catch {
-            if (timerRef.current) clearInterval(timerRef.current);
-            setGenError({ type: "internal_error", message: "Lost connection while generating your spec." });
-          }
-        }, POLL_INTERVAL_MS);
-      })
+      .then(({ job_id }) => pollJob(job_id))
       .catch(() => {
         setGenError({
           type: "internal_error",
@@ -86,7 +124,44 @@ export default function Home() {
       });
   };
 
-  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
+  const openSpec = (id: string) => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    getSpecJob(id)
+      .then((job) => {
+        if (job.status === "done" && job.spec) {
+          setSpec(job.spec);
+          go("spec");
+          return;
+        }
+        setGenStep(job.progress.step);
+        setRevisionRound(job.progress.revision_round);
+        setMaxRevisionRounds(job.progress.max_revision_rounds);
+        setGenError(job.status === "failed" ? job.error ?? { type: "internal_error", message: "Something went wrong generating the spec." } : null);
+        setScreen("generating");
+        if (job.status !== "failed") pollJob(id);
+      })
+      .catch(() => {
+        setGenError({ type: "internal_error", message: "Couldn't load that spec." });
+        setScreen("generating");
+      });
+  };
+
+  const handleAuthSubmit = async (fields: { name: string; email: string; password: string }) => {
+    const authedUser = authMode === "signup"
+      ? await signup(fields.name, fields.email, fields.password)
+      : await login(fields.email, fields.password);
+    setUser(authedUser);
+    go("dashboard");
+  };
+
+  const handleLogout = () => {
+    logoutRequest().finally(() => {
+      setUser(null);
+      setSpecs([]);
+      setSpec(null);
+      go("landing");
+    });
+  };
 
   const setField = (key: keyof FormFields, value: string) => {
     setForm((f) => ({ ...f, [key]: value }));
@@ -102,6 +177,8 @@ export default function Home() {
     else setStep((s) => s - 1);
   };
 
+  if (!authChecked) return null;
+
   return (
     <>
       {screen === "landing" && (
@@ -113,16 +190,17 @@ export default function Home() {
           authMode={authMode}
           onSetLogin={() => setAuthMode("login")}
           onSetSignup={() => setAuthMode("signup")}
-          onSubmit={() => go("dashboard")}
+          onSubmit={handleAuthSubmit}
         />
       )}
 
       {(screen === "dashboard" || screen === "templates" || screen === "new" || screen === "generating" || screen === "spec") && (
-        <AppShell screen={screen} onGo={go} onNew={() => go("new")}>
+        <AppShell screen={screen} user={user} onGo={go} onNew={() => go("new")} onLogout={handleLogout}>
           {screen === "dashboard" && (
             <Dashboard
-              onOpenSpec={() => go("spec")}
-              onOpenForm={() => go("new")}
+              specs={specs}
+              loading={specsLoading}
+              onOpenSpec={openSpec}
               onGoTemplates={() => go("templates")}
               onUseTemplate={useTemplate}
             />

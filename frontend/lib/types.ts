@@ -36,15 +36,6 @@ export type Question = {
   choices: string[];
 };
 
-export type SpecItem = {
-  title: string;
-  meta: string;
-  stage: string;
-  pct: string;
-  status: "Ready" | "Draft";
-  open?: boolean;
-};
-
 export type SectionItem = { text: string };
 export type SectionGroup = { label: string; items: SectionItem[] };
 export type Section = {
@@ -93,4 +84,23 @@ export type JobStatusResponse = {
   error: JobError | null;
   created_at: string;
   updated_at: string;
+};
+
+export type SpecJobSummary = {
+  id: string;
+  title: string;
+  status: JobStatus;
+  created_at: string;
+  updated_at: string;
+};
+
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+export type AuthResponse = {
+  token: string;
+  user: User;
 };

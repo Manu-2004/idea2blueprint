@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     # Comma-separated list of origins allowed to call the API directly (browser CORS).
     cors_origins: str = "http://localhost:3000"
 
+    # sqlite file path holding users/sessions/spec_jobs. Relative paths resolve against the
+    # process's working directory (typically `backend/`).
+    database_path: str = "blueprint_agents.db"
+
     def model_for(self, agent: AgentName) -> str:
         override = getattr(self, f"openai_model_{agent}")
         return override or self.openai_model_default

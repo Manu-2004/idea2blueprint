@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from blueprint_agents.schemas.common import Spec
 
@@ -43,3 +43,36 @@ class JobStatusResponse(BaseModel):
     error: Optional[JobError] = None
     created_at: datetime
     updated_at: datetime
+
+
+class SpecJobSummary(BaseModel):
+    """One row of `GET /api/spec-jobs` — enough for the dashboard list without shipping the
+    full spec/brief/event history for every job."""
+
+    id: str
+    title: str
+    status: JobStatus
+    created_at: datetime
+    updated_at: datetime
+
+
+class UserResponse(BaseModel):
+    id: str
+    name: str
+    email: str
+
+
+class SignupRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    email: str = Field(min_length=3, max_length=320)
+    password: str = Field(min_length=8, max_length=200)
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class AuthResponse(BaseModel):
+    token: str
+    user: UserResponse

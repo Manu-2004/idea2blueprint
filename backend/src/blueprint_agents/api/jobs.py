@@ -1,70 +1,150 @@
-import threading
+import json
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Optional
 
 from blueprint_agents.api.schemas import JobError, JobStatus
+from blueprint_agents.db import Database
 from blueprint_agents.schemas.brief import Brief
 from blueprint_agents.schemas.common import Spec
 from blueprint_agents.schemas.events import NodeEvent
 
-# No DB in this pass: jobs live only in process memory and are lost on restart. This TTL
-# just keeps a long-running dev/demo process from leaking memory indefinitely — it is not a
-# substitute for real persistence.
-JOB_TTL = timedelta(minutes=30)
-
 
 class Job:
-    def __init__(self, job_id: str, brief: Brief, max_revision_rounds: int):
+    def __init__(
+        self,
+        job_id: str,
+        user_id: str,
+        brief: Brief,
+        max_revision_rounds: int,
+        *,
+        title: Optional[str] = None,
+        status: JobStatus = "pending",
+        events: Optional[list[NodeEvent]] = None,
+        revision_round: int = 0,
+        spec: Optional[Spec] = None,
+        error: Optional[JobError] = None,
+        created_at: Optional[datetime] = None,
+        updated_at: Optional[datetime] = None,
+    ):
         now = datetime.now(timezone.utc)
         self.id = job_id
+        self.user_id = user_id
         self.brief = brief
-        self.status: JobStatus = "pending"
-        self.events: list[NodeEvent] = []
-        self.revision_round = 0
+        self.title = title
+        self.status = status
+        self.events = events if events is not None else []
+        self.revision_round = revision_round
         self.max_revision_rounds = max_revision_rounds
-        self.spec: Optional[Spec] = None
-        self.error: Optional[JobError] = None
-        self.created_at = now
-        self.updated_at = now
+        self.spec = spec
+        self.error = error
+        self.created_at = created_at or now
+        self.updated_at = updated_at or now
+
+
+def _row_to_job(row) -> Job:
+    return Job(
+        job_id=row["id"],
+        user_id=row["user_id"],
+        brief=Brief.model_validate_json(row["brief_json"]),
+        max_revision_rounds=row["max_revision_rounds"],
+        title=row["title"],
+        status=row["status"],
+        events=[NodeEvent(**e) for e in json.loads(row["events_json"])],
+        revision_round=row["revision_round"],
+        spec=Spec.model_validate_json(row["spec_json"]) if row["spec_json"] else None,
+        error=JobError.model_validate_json(row["error_json"]) if row["error_json"] else None,
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
 
 
 class JobStore:
-    """In-memory job store, guarded by a real lock (not just relying on the GIL) since
-    updates are read-modify-write from a background thread while GET handlers read
-    concurrently on the event loop thread."""
+    """Spec-job storage backed by sqlite (`Database`) instead of an in-memory dict, so
+    generated specs survive a server restart and can be listed per-user for the dashboard.
+    `get`/`update` keep the exact signatures the in-memory version had — `api/runner.py`
+    calls them without knowing storage moved under it."""
 
-    def __init__(self) -> None:
-        self._jobs: dict[str, Job] = {}
-        self._lock = threading.Lock()
+    def __init__(self, db: Database):
+        self._db = db
 
-    def create(self, brief: Brief, max_revision_rounds: int) -> Job:
-        with self._lock:
-            self._evict_expired_locked()
-            job_id = uuid.uuid4().hex
-            job = Job(job_id, brief, max_revision_rounds)
-            self._jobs[job_id] = job
-            return job
+    def create(self, user_id: str, brief: Brief, max_revision_rounds: int) -> Job:
+        job = Job(uuid.uuid4().hex, user_id, brief, max_revision_rounds)
+        with self._db.lock, self._db.conn:
+            self._db.conn.execute(
+                """
+                INSERT INTO spec_jobs
+                    (id, user_id, title, brief_json, status, spec_json, error_json,
+                     revision_round, max_revision_rounds, events_json, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    job.id,
+                    job.user_id,
+                    job.title,
+                    job.brief.model_dump_json(),
+                    job.status,
+                    None,
+                    None,
+                    job.revision_round,
+                    job.max_revision_rounds,
+                    "[]",
+                    job.created_at.isoformat(),
+                    job.updated_at.isoformat(),
+                ),
+            )
+        return job
 
     def get(self, job_id: str) -> Optional[Job]:
-        with self._lock:
-            return self._jobs.get(job_id)
+        with self._db.lock:
+            row = self._db.conn.execute("SELECT * FROM spec_jobs WHERE id = ?", (job_id,)).fetchone()
+        return _row_to_job(row) if row is not None else None
+
+    def list_for_user(self, user_id: str) -> list[Job]:
+        with self._db.lock:
+            rows = self._db.conn.execute(
+                "SELECT * FROM spec_jobs WHERE user_id = ? ORDER BY updated_at DESC",
+                (user_id,),
+            ).fetchall()
+        return [_row_to_job(row) for row in rows]
 
     def update(self, job_id: str, **fields) -> None:
-        with self._lock:
-            job = self._jobs.get(job_id)
-            if job is None:
-                return
-            for key, value in fields.items():
-                setattr(job, key, value)
-            job.updated_at = datetime.now(timezone.utc)
+        if not fields:
+            return
+        encoders = {
+            "status": lambda v: v,
+            "title": lambda v: v,
+            "events": lambda v: json.dumps([e.model_dump() for e in v]),
+            "revision_round": lambda v: v,
+            "spec": lambda v: v.model_dump_json() if v is not None else None,
+            "error": lambda v: v.model_dump_json() if v is not None else None,
+        }
+        columns = {
+            "status": "status",
+            "title": "title",
+            "events": "events_json",
+            "revision_round": "revision_round",
+            "spec": "spec_json",
+            "error": "error_json",
+        }
+        set_clauses = []
+        values: list = []
+        for field, value in fields.items():
+            set_clauses.append(f"{columns[field]} = ?")
+            values.append(encoders[field](value))
 
-    def _evict_expired_locked(self) -> None:
-        cutoff = datetime.now(timezone.utc) - JOB_TTL
-        expired = [
-            job_id
-            for job_id, job in self._jobs.items()
-            if job.status in ("done", "failed") and job.updated_at < cutoff
-        ]
-        for job_id in expired:
-            del self._jobs[job_id]
+        # The spec carries its own title; derive the job's title from it once generation
+        # finishes, unless the caller set one explicitly.
+        if "spec" in fields and "title" not in fields and fields["spec"] is not None:
+            set_clauses.append("title = ?")
+            values.append(fields["spec"].title)
+
+        set_clauses.append("updated_at = ?")
+        values.append(datetime.now(timezone.utc).isoformat())
+        values.append(job_id)
+
+        with self._db.lock, self._db.conn:
+            self._db.conn.execute(
+                f"UPDATE spec_jobs SET {', '.join(set_clauses)} WHERE id = ?",
+                values,
+            )

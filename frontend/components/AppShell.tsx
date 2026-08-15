@@ -1,22 +1,36 @@
 import type { ReactNode } from "react";
 import { Logo } from "./icons";
-import type { Screen } from "../lib/types";
+import type { Screen, User } from "../lib/types";
 
 const NAV_ITEMS: { key: Screen; label: string }[] = [
   { key: "dashboard", label: "Dashboard" },
   { key: "templates", label: "Templates" },
-  { key: "spec", label: "Invoice chaser spec" },
 ];
+
+function initialsFor(name: string): string {
+  return (
+    name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("") || "?"
+  );
+}
 
 export function AppShell({
   screen,
+  user,
   onGo,
   onNew,
+  onLogout,
   children,
 }: {
   screen: Screen;
+  user: User | null;
   onGo: (screen: Screen) => void;
   onNew: () => void;
+  onLogout: () => void;
   children: ReactNode;
 }) {
   const quotaUsed = 3;
@@ -62,10 +76,28 @@ export function AppShell({
           </div>
           <p className="text-muted" style={{ fontSize: 11, margin: 0 }}>Free plan. Resets 1 Sep.</p>
         </div>
-        <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 9, padding: "0 6px" }}>
-          <span style={{ width: 26, height: 26, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 11, background: "var(--color-accent-800)", color: "var(--color-accent-100)" }}>PR</span>
-          <span style={{ fontSize: 13 }}>Priya Raman</span>
-        </div>
+        {user ? (
+          <a
+            href="#"
+            title="Log out"
+            className="hover-surface"
+            style={{ position: "relative", display: "flex", alignItems: "center", gap: 9, padding: "4px 6px", borderRadius: "var(--radius-md)", textDecoration: "none", color: "var(--color-text)" }}
+            onClick={(e) => { e.preventDefault(); onLogout(); }}
+          >
+            <span style={{ width: 26, height: 26, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 11, background: "var(--color-accent-800)", color: "var(--color-accent-100)" }}>{initialsFor(user.name)}</span>
+            <span style={{ fontSize: 13 }}>{user.name}</span>
+          </a>
+        ) : (
+          <a
+            href="#"
+            className="hover-surface"
+            style={{ position: "relative", display: "flex", alignItems: "center", gap: 9, padding: "4px 6px", borderRadius: "var(--radius-md)", textDecoration: "none", color: "var(--color-text)" }}
+            onClick={(e) => { e.preventDefault(); onGo("auth"); }}
+          >
+            <span style={{ width: 26, height: 26, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 11, background: "var(--color-accent-800)", color: "var(--color-accent-100)" }}>?</span>
+            <span style={{ fontSize: 13 }}>Log in — previewing a sample</span>
+          </a>
+        )}
       </aside>
 
       <main style={{ minWidth: 0 }}>{children}</main>

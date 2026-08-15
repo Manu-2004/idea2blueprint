@@ -1,4 +1,4 @@
-import type { Question, Section, Spec, SpecItem, Template } from "./types";
+import type { Question, Section, Spec, Template } from "./types";
 
 export const TEMPLATES: Record<string, Template> = {
   saas: {
@@ -312,14 +312,6 @@ export const SAMPLE_SPEC: Spec = {
     "Web app for solo designers and developers invoicing 3–10 clients a month. Scoped to 8 weeks and a low-code build.",
   sections: SECTIONS,
 };
-
-export const SPECS: SpecItem[] = [
-  { title: "Invoice chaser for freelancers", meta: "Web · edited 2 hours ago", stage: "Complete", pct: "100%", status: "Ready", open: true },
-  { title: "Churn early-warning board", meta: "Web · edited yesterday", stage: "Answers", pct: "60%", status: "Draft" },
-  { title: "Studio capacity planner", meta: "Web · edited 4 days ago", stage: "Answers", pct: "35%", status: "Draft" },
-  { title: "Interview synthesis assistant", meta: "Web · edited 11 Aug", stage: "Complete", pct: "100%", status: "Ready" },
-  { title: "Onboarding guide in-app", meta: "Web and mobile · edited 6 Aug", stage: "Idea only", pct: "15%", status: "Draft" },
-];
 
 export const GEN_LABELS: string[] = [
   "Reading the idea",
