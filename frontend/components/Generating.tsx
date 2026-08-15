@@ -8,35 +8,54 @@ const ERROR_COPY: Record<JobError["type"], string> = {
   openai_content_policy: "That idea couldn't be processed as written — try rephrasing it.",
   openai_error: "The model provider rejected the request.",
   internal_error: "Something went wrong while generating your spec.",
+  irrelevant_input:
+    "That doesn't look like a product idea. Go back and describe what you want to build, who it's for, and what problem it solves.",
+};
+
+const ERROR_KICKER: Record<JobError["type"], string> = {
+  openai_rate_limit: "Generation failed",
+  openai_timeout: "Generation failed",
+  openai_content_policy: "Generation failed",
+  openai_error: "Generation failed",
+  internal_error: "Generation failed",
+  irrelevant_input: "Needs a real idea",
 };
 
 export function Generating({
   genStep,
   error,
   onRetry,
+  onEdit,
   revisionRound = 0,
   maxRevisionRounds = 0,
 }: {
   genStep: number;
   error?: JobError | null;
   onRetry?: () => void;
+  onEdit?: () => void;
   revisionRound?: number;
   maxRevisionRounds?: number;
 }) {
   if (error) {
+    // Resubmitting the exact same input will just fail intake again, so this one case
+    // sends the user back to edit the brief rather than retrying the job as-is.
+    const isIrrelevant = error.type === "irrelevant_input";
+    const action = isIrrelevant ? onEdit ?? onRetry : onRetry;
+    const actionLabel = isIrrelevant ? "Edit idea" : "Try again";
+
     return (
       <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 40 }}>
         <div className="card elev-sm" style={{ width: "100%", maxWidth: 420 }}>
-          <span className="card-kicker">Generation failed</span>
+          <span className="card-kicker">{ERROR_KICKER[error.type]}</span>
           <p className="card-body" style={{ margin: 0 }}>{ERROR_COPY[error.type]}</p>
-          {onRetry && (
+          {action && (
             <a
               href="#"
               className="btn btn-primary"
               style={{ justifySelf: "start" }}
-              onClick={(e) => { e.preventDefault(); onRetry(); }}
+              onClick={(e) => { e.preventDefault(); action(); }}
             >
-              Try again
+              {actionLabel}
             </a>
           )}
         </div>

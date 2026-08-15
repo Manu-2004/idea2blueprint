@@ -50,3 +50,27 @@ export async function getSpecJob(jobId: string): Promise<JobStatusResponse> {
 export async function listSpecJobs(): Promise<SpecJobSummary[]> {
   return apiFetch<SpecJobSummary[]>("/api/spec-jobs");
 }
+
+export async function deleteSpecJob(jobId: string): Promise<void> {
+  return apiFetch<void>(`/api/spec-jobs/${jobId}`, { method: "DELETE" });
+}
+
+export async function saveDraft(brief: FormFields): Promise<JobCreateResponse> {
+  return apiFetch<JobCreateResponse>("/api/spec-jobs/drafts", {
+    method: "POST",
+    body: JSON.stringify(brief),
+  });
+}
+
+export async function updateDraft(jobId: string, brief: FormFields): Promise<JobCreateResponse> {
+  return apiFetch<JobCreateResponse>(`/api/spec-jobs/${jobId}/draft`, {
+    method: "PUT",
+    body: JSON.stringify(brief),
+  });
+}
+
+export async function generateFromDraft(jobId: string): Promise<JobCreateResponse> {
+  return apiFetch<JobCreateResponse>(`/api/spec-jobs/${jobId}/generate`, {
+    method: "POST",
+  });
+}

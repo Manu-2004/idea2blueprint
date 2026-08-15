@@ -68,8 +68,15 @@ class JobStore:
     def __init__(self, db: Database):
         self._db = db
 
-    def create(self, user_id: str, brief: Brief, max_revision_rounds: int) -> Job:
-        job = Job(uuid.uuid4().hex, user_id, brief, max_revision_rounds)
+    def create(
+        self,
+        user_id: str,
+        brief: Brief,
+        max_revision_rounds: int,
+        *,
+        status: JobStatus = "pending",
+    ) -> Job:
+        job = Job(uuid.uuid4().hex, user_id, brief, max_revision_rounds, status=status)
         with self._db.lock, self._db.conn:
             self._db.conn.execute(
                 """
@@ -108,12 +115,17 @@ class JobStore:
             ).fetchall()
         return [_row_to_job(row) for row in rows]
 
+    def delete(self, job_id: str) -> None:
+        with self._db.lock, self._db.conn:
+            self._db.conn.execute("DELETE FROM spec_jobs WHERE id = ?", (job_id,))
+
     def update(self, job_id: str, **fields) -> None:
         if not fields:
             return
         encoders = {
             "status": lambda v: v,
             "title": lambda v: v,
+            "brief": lambda v: v.model_dump_json(),
             "events": lambda v: json.dumps([e.model_dump() for e in v]),
             "revision_round": lambda v: v,
             "spec": lambda v: v.model_dump_json() if v is not None else None,
@@ -122,6 +134,7 @@ class JobStore:
         columns = {
             "status": "status",
             "title": "title",
+            "brief": "brief_json",
             "events": "events_json",
             "revision_round": "revision_round",
             "spec": "spec_json",

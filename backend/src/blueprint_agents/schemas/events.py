@@ -8,5 +8,5 @@ class NodeEvent(BaseModel):
     the API layer to compute polling progress (`api/progress.py`) without depending on the
     human-readable `trace` string format."""
 
-    node: Literal["product", "ux", "technical", "reviewer", "assemble"]
+    node: Literal["intake", "product", "ux", "technical", "reviewer", "assemble"]
     revision_round: int

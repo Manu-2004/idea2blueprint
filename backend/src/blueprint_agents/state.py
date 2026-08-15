@@ -6,6 +6,7 @@ from typing_extensions import TypedDict
 from blueprint_agents.schemas.brief import Brief
 from blueprint_agents.schemas.common import Spec
 from blueprint_agents.schemas.events import NodeEvent
+from blueprint_agents.schemas.intake import IntakeVerdict
 from blueprint_agents.schemas.product import ProductOutput
 from blueprint_agents.schemas.review import ReviewVerdict
 from blueprint_agents.schemas.technical import TechnicalOutput
@@ -14,6 +15,8 @@ from blueprint_agents.schemas.ux import UXOutput
 
 class GraphState(TypedDict, total=False):
     brief: Brief
+
+    intake: Optional[IntakeVerdict]
 
     product_output: Optional[ProductOutput]
     ux_output: Optional[UXOutput]

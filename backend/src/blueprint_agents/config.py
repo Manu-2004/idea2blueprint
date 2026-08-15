@@ -5,12 +5,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from blueprint_agents.constants import DEFAULT_MAX_REVISION_ROUNDS
 
-AgentName = Literal["product", "ux", "technical", "reviewer"]
+AgentName = Literal["intake", "product", "ux", "technical", "reviewer"]
 
 # The reviewer writes shorter, more mechanical output (a verdict, not prose), so a lower
 # temperature suits it; technical benefits from consistency over creativity too. Product/UX
-# are the sections doing the most freeform prose writing.
+# are the sections doing the most freeform prose writing. Intake is a binary classification
+# call, so it gets the lowest temperature of all.
 DEFAULT_TEMPERATURES: dict[AgentName, float] = {
+    "intake": 0.0,
     "product": 0.5,
     "ux": 0.5,
     "technical": 0.2,
@@ -24,6 +26,7 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
 
     openai_model_default: str = "gpt-4.1-mini"
+    openai_model_intake: str | None = None
     openai_model_product: str | None = None
     openai_model_ux: str | None = None
     openai_model_technical: str | None = None

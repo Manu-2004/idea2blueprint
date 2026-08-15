@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { clearToken, createSpecJob, getSpecJob, getToken, listSpecJobs } from "../lib/api";
+import {
+  clearToken,
+  createSpecJob,
+  deleteSpecJob,
+  generateFromDraft,
+  getSpecJob,
+  getToken,
+  listSpecJobs,
+  saveDraft,
+  updateDraft,
+} from "../lib/api";
 import { login, logout as logoutRequest, me, signup } from "../lib/auth";
 import { QUESTIONS, SAMPLE_SPEC, TEMPLATES } from "../lib/data";
 import type { AuthMode, FormFields, JobError, Screen, Spec, SpecJobSummary, User } from "../lib/types";
@@ -25,6 +35,8 @@ export default function Home() {
   const [form, setForm] = useState<FormFields>({ ...TEMPLATES.saas.form });
   const [formSource, setFormSource] = useState("Blank spec");
   const [step, setStep] = useState(0);
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [draftStatus, setDraftStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [genStep, setGenStep] = useState(0);
   const [genError, setGenError] = useState<JobError | null>(null);
   const [revisionRound, setRevisionRound] = useState(0);
@@ -80,7 +92,15 @@ export default function Home() {
     setStep(0);
     setForm({ ...t.form });
     setFormSource("From template · " + t.title);
+    setDraftId(null);
+    setDraftStatus("idle");
     setScreen("new");
+  };
+
+  const startNewSpec = () => {
+    setDraftId(null);
+    setDraftStatus("idle");
+    go("new");
   };
 
   const pollJob = (jobId: string) => {
@@ -121,8 +141,14 @@ export default function Home() {
     setMaxRevisionRounds(0);
     setScreen("generating");
 
-    createSpecJob(form)
+    const start = draftId
+      ? updateDraft(draftId, form).then(() => generateFromDraft(draftId))
+      : createSpecJob(form);
+
+    start
       .then(({ job_id }) => {
+        setDraftId(null);
+        setDraftStatus("idle");
         refreshSpecs();
         pollJob(job_id);
       })
@@ -134,10 +160,37 @@ export default function Home() {
       });
   };
 
+  const handleSaveDraft = () => {
+    setDraftStatus("saving");
+    const save = draftId ? updateDraft(draftId, form) : saveDraft(form);
+    save
+      .then(({ job_id }) => {
+        setDraftId(job_id);
+        setDraftStatus("saved");
+        refreshSpecs();
+      })
+      .catch(() => setDraftStatus("error"));
+  };
+
+  const handleDeleteSpec = (id: string) => {
+    deleteSpecJob(id)
+      .then(refreshSpecs)
+      .catch(() => window.alert("Couldn't delete that spec — try again."));
+  };
+
   const openSpec = (id: string) => {
     if (timerRef.current) clearInterval(timerRef.current);
     getSpecJob(id)
       .then((job) => {
+        if (job.status === "draft") {
+          setForm(job.brief);
+          setFormSource("Draft");
+          setDraftId(id);
+          setDraftStatus("idle");
+          setStep(0);
+          setScreen("new");
+          return;
+        }
         if (job.status === "done" && job.spec) {
           setSpec(job.spec);
           go("spec");
@@ -175,6 +228,7 @@ export default function Home() {
 
   const setField = (key: keyof FormFields, value: string) => {
     setForm((f) => ({ ...f, [key]: value }));
+    setDraftStatus((s) => (s === "idle" || s === "saving") ? s : "idle");
   };
 
   const handleNext = () => {
@@ -205,12 +259,13 @@ export default function Home() {
       )}
 
       {(screen === "dashboard" || screen === "templates" || screen === "new" || screen === "generating" || screen === "spec") && (
-        <AppShell screen={screen} user={user} specsUsed={specs.length} onGo={go} onNew={() => go("new")} onLogout={handleLogout}>
+        <AppShell screen={screen} user={user} specsUsed={specs.length} onGo={go} onNew={startNewSpec} onLogout={handleLogout}>
           {screen === "dashboard" && (
             <Dashboard
               specs={specs}
               loading={specsLoading}
               onOpenSpec={openSpec}
+              onDeleteSpec={handleDeleteSpec}
               onGoTemplates={() => go("templates")}
               onUseTemplate={useTemplate}
             />
@@ -221,11 +276,13 @@ export default function Home() {
               form={form}
               formSource={formSource}
               step={step}
+              draftStatus={draftStatus}
               onIdeaChange={(value) => setField("idea", value)}
               onChoiceSelect={(key, value) => setField(key, value)}
               onCustomChange={(key, value) => setField(key, value)}
               onNext={handleNext}
               onBack={handleBack}
+              onSaveDraft={handleSaveDraft}
             />
           )}
           {screen === "generating" && (
@@ -233,6 +290,7 @@ export default function Home() {
               genStep={genStep}
               error={genError}
               onRetry={generate}
+              onEdit={() => go("new")}
               revisionRound={revisionRound}
               maxRevisionRounds={maxRevisionRounds}
             />

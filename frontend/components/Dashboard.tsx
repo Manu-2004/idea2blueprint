@@ -1,10 +1,11 @@
 import { TEMPLATES } from "../lib/data";
 import type { SpecJobSummary } from "../lib/types";
-import { ArrowRightIcon } from "./icons";
+import { ArrowRightIcon, TrashIcon } from "./icons";
 
 const RECENT_KEYS = ["saas", "copilot", "research"];
 
 const STATUS_BADGE: Record<SpecJobSummary["status"], { label: string; bg: string; fg: string }> = {
+  draft: { label: "Draft", bg: "oklch(0.355 0.01 260)", fg: "oklch(0.930 0.01 260)" },
   done: { label: "Ready", bg: "oklch(0.355 0.062 150)", fg: "oklch(0.930 0.048 150)" },
   pending: { label: "Generating", bg: "oklch(0.355 0.062 85)", fg: "oklch(0.930 0.060 85)" },
   running: { label: "Generating", bg: "oklch(0.355 0.062 85)", fg: "oklch(0.930 0.060 85)" },
@@ -26,12 +27,14 @@ export function Dashboard({
   specs,
   loading,
   onOpenSpec,
+  onDeleteSpec,
   onGoTemplates,
   onUseTemplate,
 }: {
   specs: SpecJobSummary[];
   loading: boolean;
   onOpenSpec: (id: string) => void;
+  onDeleteSpec: (id: string) => void;
   onGoTemplates: () => void;
   onUseTemplate: (key: string) => void;
 }) {
@@ -56,19 +59,33 @@ export function Dashboard({
           {specs.map((spec) => {
             const badge = STATUS_BADGE[spec.status];
             return (
-              <a
+              <div
                 key={spec.id}
-                href="#"
-                onClick={(e) => { e.preventDefault(); onOpenSpec(spec.id); }}
+                role="button"
+                tabIndex={0}
+                onClick={() => onOpenSpec(spec.id)}
+                onKeyDown={(e) => { if (e.key === "Enter") onOpenSpec(spec.id); }}
                 className="hover-shadow-md"
-                style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 24, alignItems: "center", padding: "18px 20px", borderRadius: "var(--radius-md)", textDecoration: "none", color: "var(--color-text)", background: "var(--color-surface)", boxShadow: "var(--shadow-sm)" }}
+                style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 24, alignItems: "center", padding: "18px 20px", borderRadius: "var(--radius-md)", cursor: "pointer", color: "var(--color-text)", background: "var(--color-surface)", boxShadow: "var(--shadow-sm)" }}
               >
                 <div style={{ display: "grid", gap: 5, minWidth: 0 }}>
                   <span style={{ fontFamily: "var(--font-heading)", fontSize: 17 }}>{spec.title}</span>
                   <span style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>edited {formatRelativeTime(spec.updated_at)}</span>
                 </div>
                 <span style={{ justifySelf: "end", display: "inline-flex", alignItems: "center", fontSize: 11, letterSpacing: "0.02em", padding: "3px 10px", borderRadius: 6, background: badge.bg, color: badge.fg }}>{badge.label}</span>
-              </a>
+                <button
+                  type="button"
+                  aria-label={`Delete ${spec.title}`}
+                  className="hover-surface"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm(`Delete "${spec.title}"? This can't be undone.`)) onDeleteSpec(spec.id);
+                  }}
+                  style={{ display: "grid", placeItems: "center", width: 30, height: 30, padding: 0, border: "none", borderRadius: "var(--radius-sm)", background: "transparent", color: "color-mix(in srgb, var(--color-text) 45%, transparent)", cursor: "pointer" }}
+                >
+                  <TrashIcon />
+                </button>
+              </div>
             );
           })}
         </div>

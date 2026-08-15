@@ -5,20 +5,24 @@ export function NewSpecForm({
   form,
   formSource,
   step,
+  draftStatus,
   onIdeaChange,
   onChoiceSelect,
   onCustomChange,
   onNext,
   onBack,
+  onSaveDraft,
 }: {
   form: FormFields;
   formSource: string;
   step: number;
+  draftStatus: "idle" | "saving" | "saved" | "error";
   onIdeaChange: (value: string) => void;
   onChoiceSelect: (key: keyof FormFields, value: string) => void;
   onCustomChange: (key: keyof FormFields, value: string) => void;
   onNext: () => void;
   onBack: () => void;
+  onSaveDraft: () => void;
 }) {
   const q = step > 0 ? QUESTIONS[step - 1] : null;
   const stepCounter = step === 0 ? "Your idea" : `Question ${step} of ${QUESTIONS.length}`;
@@ -26,6 +30,12 @@ export function NewSpecForm({
   const nextLabel = step === QUESTIONS.length ? "Generate spec" : "Continue";
   const backLabel = step === 0 ? "Cancel" : "Back";
   const qCustom = q && q.choices.indexOf(form[q.key]) === -1 ? form[q.key] : "";
+  const draftStatusLabel: Record<typeof draftStatus, string> = {
+    idle: "",
+    saving: "Saving draft…",
+    saved: "Draft saved",
+    error: "Couldn't save draft",
+  };
 
   return (
     <div style={{ maxWidth: 640, padding: "56px 44px 96px", display: "grid", gap: 36 }}>
@@ -91,8 +101,11 @@ export function NewSpecForm({
 
       <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
         <a href="#" className="btn btn-primary" style={{ padding: "10px 20px" }} onClick={(e) => { e.preventDefault(); onNext(); }}>{nextLabel}</a>
+        <a href="#" className="btn btn-secondary" onClick={(e) => { e.preventDefault(); onSaveDraft(); }}>Save draft</a>
         <a href="#" className="btn btn-secondary" onClick={(e) => { e.preventDefault(); onBack(); }}>{backLabel}</a>
-        <span className="text-muted" style={{ fontSize: 12, marginLeft: "auto" }}>Uses 1 of your 10 monthly specs</span>
+        <span className="text-muted" style={{ fontSize: 12, marginLeft: "auto" }}>
+          {draftStatusLabel[draftStatus] || "Uses 1 of your 10 monthly specs"}
+        </span>
       </div>
     </div>
   );

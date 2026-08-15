@@ -1,5 +1,17 @@
-from blueprint_agents.graph import route_after_review
+from blueprint_agents.graph import route_after_intake, route_after_review
+from blueprint_agents.schemas.intake import IntakeVerdict
 from blueprint_agents.schemas.review import Issue, ReviewVerdict
+from langgraph.graph import END
+
+
+def test_relevant_brief_routes_to_product_agent():
+    state = {"intake": IntakeVerdict(is_relevant=True, reason="Looks like a real product idea.")}
+    assert route_after_intake(state) == "product_agent"
+
+
+def test_irrelevant_brief_routes_to_end():
+    state = {"intake": IntakeVerdict(is_relevant=False, reason="This isn't a product idea.")}
+    assert route_after_intake(state) == END
 
 
 def _verdict(issues):

@@ -49,7 +49,7 @@ _cors_origins = [origin.strip() for origin in get_settings().cors_origins.split(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
 
@@ -61,6 +61,13 @@ def health() -> dict:
 
 def _user_response(user: User) -> UserResponse:
     return UserResponse(id=user.id, name=user.name, email=user.email)
+
+
+def _get_owned_job_or_404(job_id: str, current_user: User):
+    job = store.get(job_id)
+    if job is None or job.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Unknown job id.")
+    return job
 
 
 @app.post("/api/auth/signup", status_code=201, response_model=AuthResponse)
@@ -109,6 +116,52 @@ def create_spec_job(
     return JobCreateResponse(job_id=job.id, status=job.status)
 
 
+@app.post("/api/spec-jobs/drafts", status_code=201, response_model=JobCreateResponse)
+def save_draft(
+    brief: Brief,
+    response: Response,
+    current_user: User = Depends(get_current_user),
+) -> JobCreateResponse:
+    settings = get_settings()
+    job = store.create(current_user.id, brief, settings.max_revision_rounds, status="draft")
+    response.headers["Location"] = f"/api/spec-jobs/{job.id}"
+    return JobCreateResponse(job_id=job.id, status=job.status)
+
+
+@app.put("/api/spec-jobs/{job_id}/draft", response_model=JobCreateResponse)
+def update_draft(
+    job_id: str,
+    brief: Brief,
+    current_user: User = Depends(get_current_user),
+) -> JobCreateResponse:
+    job = _get_owned_job_or_404(job_id, current_user)
+    if job.status != "draft":
+        raise HTTPException(status_code=409, detail="Only draft specs can be edited.")
+    store.update(job_id, brief=brief)
+    return JobCreateResponse(job_id=job.id, status=job.status)
+
+
+@app.post("/api/spec-jobs/{job_id}/generate", status_code=202, response_model=JobCreateResponse)
+def generate_from_draft(
+    job_id: str,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
+) -> JobCreateResponse:
+    job = _get_owned_job_or_404(job_id, current_user)
+    if job.status != "draft":
+        raise HTTPException(status_code=409, detail="Only draft specs can be generated.")
+    store.update(job_id, status="pending")
+    background_tasks.add_task(run_job, job.id, store)
+    return JobCreateResponse(job_id=job.id, status="pending")
+
+
+@app.delete("/api/spec-jobs/{job_id}", status_code=204)
+def delete_spec_job(job_id: str, current_user: User = Depends(get_current_user)) -> Response:
+    _get_owned_job_or_404(job_id, current_user)
+    store.delete(job_id)
+    return Response(status_code=204)
+
+
 @app.get("/api/spec-jobs", response_model=list[SpecJobSummary])
 def list_spec_jobs(current_user: User = Depends(get_current_user)) -> list[SpecJobSummary]:
     jobs = store.list_for_user(current_user.id)
@@ -126,9 +179,7 @@ def list_spec_jobs(current_user: User = Depends(get_current_user)) -> list[SpecJ
 
 @app.get("/api/spec-jobs/{job_id}", response_model=JobStatusResponse)
 def get_spec_job(job_id: str, current_user: User = Depends(get_current_user)) -> JobStatusResponse:
-    job = store.get(job_id)
-    if job is None or job.user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="Unknown job id.")
+    job = _get_owned_job_or_404(job_id, current_user)
 
     return JobStatusResponse(
         status=job.status,
@@ -137,6 +188,7 @@ def get_spec_job(job_id: str, current_user: User = Depends(get_current_user)) ->
             revision_round=job.revision_round,
             max_revision_rounds=job.max_revision_rounds,
         ),
+        brief=job.brief,
         spec=job.spec,
         error=job.error,
         created_at=job.created_at,

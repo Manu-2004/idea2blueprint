@@ -15,6 +15,14 @@ export function ArrowRightIcon({ size = 16, strokeWidth = 1.5 }: { size?: number
   );
 }
 
+export function TrashIcon({ size = 15, strokeWidth = 1.6 }: { size?: number; strokeWidth?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 7h16M9 7V4.8c0-.44.36-.8.8-.8h4.4c.44 0 .8.36.8.8V7m-9 0 .8 12.2c.03.42.4.8.9.8h6.6c.5 0 .87-.38.9-.8L18 7" />
+    </svg>
+  );
+}
+
 export function SpinnerIcon({ size = 18 }: { size?: number }) {
   return (
     <svg

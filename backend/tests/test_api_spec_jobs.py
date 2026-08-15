@@ -66,6 +66,82 @@ def test_get_unknown_job_is_404(client):
     assert res.status_code == 404
 
 
+def test_save_and_edit_draft(client):
+    token = _signup(client)
+    create = client.post("/api/spec-jobs/drafts", json=SAMPLE_BRIEF, headers=_auth(token))
+    assert create.status_code == 201
+    job_id = create.json()["job_id"]
+    assert create.json()["status"] == "draft"
+
+    get = client.get(f"/api/spec-jobs/{job_id}", headers=_auth(token))
+    assert get.status_code == 200
+    assert get.json()["status"] == "draft"
+    assert get.json()["brief"]["idea"] == SAMPLE_BRIEF["idea"]
+
+    edited_brief = {**SAMPLE_BRIEF, "idea": "A different idea entirely."}
+    update = client.put(f"/api/spec-jobs/{job_id}/draft", json=edited_brief, headers=_auth(token))
+    assert update.status_code == 200
+
+    get_after_edit = client.get(f"/api/spec-jobs/{job_id}", headers=_auth(token))
+    assert get_after_edit.json()["brief"]["idea"] == "A different idea entirely."
+
+
+def test_cannot_edit_a_non_draft_job(client):
+    token = _signup(client)
+    job_id = client.post("/api/spec-jobs", json=SAMPLE_BRIEF, headers=_auth(token)).json()["job_id"]
+
+    update = client.put(f"/api/spec-jobs/{job_id}/draft", json=SAMPLE_BRIEF, headers=_auth(token))
+    assert update.status_code == 409
+
+
+def test_generate_from_draft_schedules_the_job(client, monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        "blueprint_agents.api.app.run_job", lambda job_id, store: calls.append(job_id)
+    )
+    token = _signup(client)
+    job_id = client.post(
+        "/api/spec-jobs/drafts", json=SAMPLE_BRIEF, headers=_auth(token)
+    ).json()["job_id"]
+
+    generate = client.post(f"/api/spec-jobs/{job_id}/generate", headers=_auth(token))
+    assert generate.status_code == 202
+    assert generate.json()["status"] == "pending"
+    assert calls == [job_id]
+
+
+def test_cannot_generate_a_job_that_is_not_a_draft(client):
+    token = _signup(client)
+    job_id = client.post("/api/spec-jobs", json=SAMPLE_BRIEF, headers=_auth(token)).json()["job_id"]
+
+    generate = client.post(f"/api/spec-jobs/{job_id}/generate", headers=_auth(token))
+    assert generate.status_code == 409
+
+
+def test_delete_spec_job(client):
+    token = _signup(client)
+    job_id = client.post("/api/spec-jobs", json=SAMPLE_BRIEF, headers=_auth(token)).json()["job_id"]
+
+    delete = client.delete(f"/api/spec-jobs/{job_id}", headers=_auth(token))
+    assert delete.status_code == 204
+
+    get = client.get(f"/api/spec-jobs/{job_id}", headers=_auth(token))
+    assert get.status_code == 404
+    assert client.get("/api/spec-jobs", headers=_auth(token)).json() == []
+
+
+def test_cannot_delete_another_users_job(client):
+    token_a = _signup(client, "a@example.com")
+    token_b = _signup(client, "b@example.com")
+    job_id = client.post(
+        "/api/spec-jobs", json=SAMPLE_BRIEF, headers=_auth(token_a)
+    ).json()["job_id"]
+
+    delete = client.delete(f"/api/spec-jobs/{job_id}", headers=_auth(token_b))
+    assert delete.status_code == 404
+    assert client.get(f"/api/spec-jobs/{job_id}", headers=_auth(token_a)).status_code == 200
+
+
 def test_jobs_persist_across_a_fresh_store_on_the_same_db_file(tmp_path, monkeypatch):
     db_path = str(tmp_path / "persist.db")
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")

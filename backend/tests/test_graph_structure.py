@@ -6,5 +6,12 @@ def test_build_graph_compiles_without_an_api_key():
     # invoke time, never during build_graph()/compile() itself.
     graph = build_graph()
     node_names = set(graph.get_graph().nodes.keys())
-    expected = {"product_agent", "ux_agent", "technical_agent", "reviewer_agent", "assemble"}
+    expected = {
+        "intake_agent",
+        "product_agent",
+        "ux_agent",
+        "technical_agent",
+        "reviewer_agent",
+        "assemble",
+    }
     assert expected <= node_names

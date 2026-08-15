@@ -128,7 +128,27 @@ export function AppShell({
         )}
       </aside>
 
-      <main style={{ minWidth: 0 }}>{children}</main>
+      <main style={{ minWidth: 0, position: "relative" }}>
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 640,
+            overflow: "hidden",
+            pointerEvents: "none",
+            maskImage: "linear-gradient(180deg, transparent 0%, black 45%, black 100%)",
+            WebkitMaskImage: "linear-gradient(180deg, transparent 0%, black 45%, black 100%)",
+          }}
+        >
+          <div className="lighten" style={{ position: "absolute", inset: 0, opacity: 0.35 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/layered-waves-haikei.png" alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center bottom" }} />
+          </div>
+        </div>
+        <div style={{ position: "relative", zIndex: 1 }}>{children}</div>
+      </main>
     </div>
   );
 }

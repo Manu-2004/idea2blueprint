@@ -52,14 +52,15 @@ export type Spec = {
   sections: Section[];
 };
 
-export type JobStatus = "pending" | "running" | "done" | "failed";
+export type JobStatus = "draft" | "pending" | "running" | "done" | "failed";
 
 export type JobErrorType =
   | "openai_rate_limit"
   | "openai_timeout"
   | "openai_content_policy"
   | "openai_error"
-  | "internal_error";
+  | "internal_error"
+  | "irrelevant_input";
 
 export type JobError = {
   type: JobErrorType;
@@ -80,6 +81,7 @@ export type JobCreateResponse = {
 export type JobStatusResponse = {
   status: JobStatus;
   progress: ProgressInfo;
+  brief: FormFields;
   spec: Spec | null;
   error: JobError | null;
   created_at: string;

@@ -3,12 +3,26 @@ from langgraph.graph import END, START, StateGraph
 from blueprint_agents.constants import DEFAULT_MAX_REVISION_ROUNDS
 from blueprint_agents.llm import LLMFactory, default_llm_factory
 from blueprint_agents.nodes.assemble import assemble_node
+from blueprint_agents.nodes.intake import make_intake_node
 from blueprint_agents.nodes.product import make_product_node
 from blueprint_agents.nodes.reviewer import make_reviewer_node
 from blueprint_agents.nodes.technical import make_technical_node
 from blueprint_agents.nodes.ux import make_ux_node
+from blueprint_agents.schemas.intake import IntakeVerdict
 from blueprint_agents.schemas.review import ReviewVerdict
 from blueprint_agents.state import GraphState
+
+
+def route_after_intake(state: GraphState):
+    """Gate the brief before the Product/UX/Technical agents run at all.
+
+    - Relevant brief -> proceed into the normal pipeline.
+    - Irrelevant/gibberish/off-topic brief -> end the graph immediately with no `spec`,
+      so `api/runner.py` can classify it as a rejection rather than burn 3 more LLM calls
+      drafting a spec for input that was never a real idea.
+    """
+    verdict: IntakeVerdict = state["intake"]
+    return "product_agent" if verdict.is_relevant else END
 
 
 def route_after_review(state: GraphState):
@@ -48,13 +62,15 @@ def build_graph(llm_factory: LLMFactory = default_llm_factory):
     """
     graph = StateGraph(GraphState)
 
+    graph.add_node("intake_agent", make_intake_node(llm_factory))
     graph.add_node("product_agent", make_product_node(llm_factory))
     graph.add_node("ux_agent", make_ux_node(llm_factory))
     graph.add_node("technical_agent", make_technical_node(llm_factory))
     graph.add_node("reviewer_agent", make_reviewer_node(llm_factory))
     graph.add_node("assemble", assemble_node)
 
-    graph.add_edge(START, "product_agent")
+    graph.add_edge(START, "intake_agent")
+    graph.add_conditional_edges("intake_agent", route_after_intake, ["product_agent", END])
     graph.add_edge("product_agent", "ux_agent")
     graph.add_edge("product_agent", "technical_agent")
     graph.add_edge("ux_agent", "reviewer_agent")

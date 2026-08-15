@@ -60,6 +60,16 @@ def run_job(job_id: str, store: JobStore) -> None:
                 revision_round=result_state.get("revision_round", 0),
             )
 
+        intake = result_state.get("intake")
+        if intake is not None and not intake.is_relevant:
+            store.update(
+                job_id,
+                status="failed",
+                error=JobError(type="irrelevant_input", message=intake.reason),
+            )
+            logger.info("spec job %s rejected at intake: %s", job_id, intake.reason)
+            return
+
         spec = result_state["spec"]
         store.update(job_id, status="done", spec=spec)
         logger.info(

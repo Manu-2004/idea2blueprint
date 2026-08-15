@@ -1,0 +1,15 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e5]: Idea2Blueprint
+    - generic [ref=e10]:
+      - generic [ref=e11]: Idea to MVP spec, in one pass
+      - heading "Describe the idea. Get the blueprint." [level=1] [ref=e12]: Describe the idea.Get the blueprint.
+      - paragraph [ref=e13]: Write your idea in plain words, answer six questions, and Idea2Blueprint returns a scoped MVP spec — problem, feature cuts, user stories, flows, stack and risks. Read it here, or take it away as PDF or Markdown.
+      - generic [ref=e14]:
+        - link "Get started" [ref=e15] [cursor=pointer]:
+          - /url: "#"
+        - link "See a sample spec" [ref=e16] [cursor=pointer]:
+          - /url: "#"
+  - button "Open Next.js Dev Tools" [ref=e22] [cursor=pointer]
+  - alert [ref=e26]

@@ -1,11 +1,16 @@
 from blueprint_agents.graph import build_graph
 from blueprint_agents.schemas.brief import Brief
 from blueprint_agents.schemas.common import RiskItem, SpecGroupDraft
+from blueprint_agents.schemas.intake import IntakeVerdict
 from blueprint_agents.schemas.product import ProductOutput
 from blueprint_agents.schemas.review import Issue, ReviewVerdict
 from blueprint_agents.schemas.technical import TechnicalOutput
 from blueprint_agents.schemas.ux import UXOutput
 from fakes import make_llm_factory
+
+
+def _relevant_intake():
+    return IntakeVerdict(is_relevant=True, reason="Describes a real product idea.")
 
 
 def _brief():
@@ -63,6 +68,7 @@ def test_happy_path_approves_on_first_pass():
     approved = ReviewVerdict(approved=True, issues=[], summary="looks good")
     factory = make_llm_factory(
         {
+            "intake": _relevant_intake(),
             "product": _product_output(),
             "ux": _ux_output(),
             "technical": _technical_output(),
@@ -96,6 +102,7 @@ def test_blocker_on_technical_regenerates_both_siblings_then_approves():
 
     factory = make_llm_factory(
         {
+            "intake": _relevant_intake(),
             "product": _product_output(),
             "ux": _ux_output(),
             "technical": [_technical_output("Build (v1)"), _technical_output("Build (v2, simplified)")],
@@ -128,6 +135,7 @@ def test_blocker_on_product_recascades_through_ux_and_technical():
 
     factory = make_llm_factory(
         {
+            "intake": _relevant_intake(),
             "product": _product_output(),
             "ux": _ux_output(),
             "technical": _technical_output(),
@@ -151,6 +159,7 @@ def test_cap_reached_forces_assemble_even_with_persistent_blockers():
     )
     factory = make_llm_factory(
         {
+            "intake": _relevant_intake(),
             "product": _product_output(),
             "ux": _ux_output(),
             "technical": _technical_output(),
@@ -162,3 +171,16 @@ def test_cap_reached_forces_assemble_even_with_persistent_blockers():
     assert result["spec"] is not None
     assert result["revision_round"] == 3
     assert len(_calls(result["trace"], "reviewer ran")) == 3
+
+
+def test_irrelevant_brief_ends_at_intake_without_running_other_agents():
+    rejected = IntakeVerdict(is_relevant=False, reason="This is song lyrics, not a product idea.")
+    factory = make_llm_factory({"intake": rejected})
+    result = _invoke(factory)
+
+    assert result.get("spec") is None
+    assert result["intake"].is_relevant is False
+    assert _calls(result["trace"], "product_agent ran") == []
+    assert _calls(result["trace"], "ux_agent ran") == []
+    assert _calls(result["trace"], "technical_agent ran") == []
+    assert _calls(result["trace"], "reviewer ran") == []

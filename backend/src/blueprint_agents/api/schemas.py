@@ -3,9 +3,10 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from blueprint_agents.schemas.brief import Brief
 from blueprint_agents.schemas.common import Spec
 
-JobStatus = Literal["pending", "running", "done", "failed"]
+JobStatus = Literal["draft", "pending", "running", "done", "failed"]
 
 # Best-effort classification of what went wrong, so the frontend can distinguish "try
 # again" (rate limit/timeout) from "rephrase your idea" (content policy) from a bug on our
@@ -17,6 +18,7 @@ JobErrorType = Literal[
     "openai_content_policy",
     "openai_error",
     "internal_error",
+    "irrelevant_input",
 ]
 
 
@@ -39,6 +41,7 @@ class JobCreateResponse(BaseModel):
 class JobStatusResponse(BaseModel):
     status: JobStatus
     progress: ProgressInfo
+    brief: Brief
     spec: Optional[Spec] = None
     error: Optional[JobError] = None
     created_at: datetime
