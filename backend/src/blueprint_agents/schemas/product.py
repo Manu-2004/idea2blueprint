@@ -7,6 +7,13 @@ class ProductOutput(BaseModel):
     """Product agent's output: problem/user framing, feature scoping, and product-level
     risks. Feeds section 01 (problem), 02 (features), and half of section 06 (risks)."""
 
+    title: str = Field(description="A short, punchy product name, 2-6 words, e.g. 'Invoice chaser for freelancers'.")
+    summary: str = Field(
+        description="One-line byline for the spec header: who it's for and its scope, e.g. "
+        "'Web app for solo designers and developers invoicing 3-10 clients a month. Scoped "
+        "to 8 weeks and a low-code build.'"
+    )
+
     problem_lead: str = Field(description="2-4 sentence prose introduction to the problem and target user.")
     problem_groups: list[SpecGroupDraft] = Field(
         description="Expected groups: 'Primary user' and 'Explicitly not the user'."

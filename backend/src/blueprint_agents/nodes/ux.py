@@ -1,5 +1,6 @@
 from blueprint_agents.llm import LLMFactory
 from blueprint_agents.prompts.ux import SYSTEM_PROMPT, build_user_message
+from blueprint_agents.schemas.events import NodeEvent
 from blueprint_agents.schemas.ux import UXOutput
 from blueprint_agents.state import GraphState
 
@@ -21,6 +22,10 @@ def make_ux_node(llm_factory: LLMFactory):
         )
 
         round_ = state.get("revision_round", 0)
-        return {"ux_output": output, "trace": [f"ux_agent ran (revision_round={round_})"]}
+        return {
+            "ux_output": output,
+            "trace": [f"ux_agent ran (revision_round={round_})"],
+            "events": [NodeEvent(node="ux", revision_round=round_)],
+        }
 
     return ux_node

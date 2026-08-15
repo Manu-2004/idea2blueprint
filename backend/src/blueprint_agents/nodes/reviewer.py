@@ -1,6 +1,7 @@
 from blueprint_agents.constants import DEFAULT_MAX_REVISION_ROUNDS
 from blueprint_agents.llm import LLMFactory
 from blueprint_agents.prompts.reviewer import SYSTEM_PROMPT, build_user_message
+from blueprint_agents.schemas.events import NodeEvent
 from blueprint_agents.schemas.review import ReviewVerdict
 from blueprint_agents.state import GraphState
 
@@ -32,6 +33,7 @@ def make_reviewer_node(llm_factory: LLMFactory):
             "trace": [
                 f"reviewer ran round={new_round} approved={verdict.approved} blockers={len(blockers)}"
             ],
+            "events": [NodeEvent(node="reviewer", revision_round=new_round)],
         }
 
     return reviewer_node

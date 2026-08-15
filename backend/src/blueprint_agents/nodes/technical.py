@@ -1,5 +1,6 @@
 from blueprint_agents.llm import LLMFactory
 from blueprint_agents.prompts.technical import SYSTEM_PROMPT, build_user_message
+from blueprint_agents.schemas.events import NodeEvent
 from blueprint_agents.schemas.technical import TechnicalOutput
 from blueprint_agents.state import GraphState
 
@@ -21,6 +22,10 @@ def make_technical_node(llm_factory: LLMFactory):
         )
 
         round_ = state.get("revision_round", 0)
-        return {"technical_output": output, "trace": [f"technical_agent ran (revision_round={round_})"]}
+        return {
+            "technical_output": output,
+            "trace": [f"technical_agent ran (revision_round={round_})"],
+            "events": [NodeEvent(node="technical", revision_round=round_)],
+        }
 
     return technical_node

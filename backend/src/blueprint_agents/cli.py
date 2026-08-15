@@ -49,6 +49,7 @@ def main() -> None:
             "revision_round": 0,
             "max_revision_rounds": settings.max_revision_rounds,
             "trace": [],
+            "events": [],
         }
     )
 

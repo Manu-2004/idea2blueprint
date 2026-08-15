@@ -1,11 +1,15 @@
-import { SECTIONS } from "../lib/data";
+import type { Section } from "../lib/types";
 
 export function SpecView({
-  specTitle,
+  title,
+  summary,
+  sections,
   onRegenerate,
   onOpenExport,
 }: {
-  specTitle: string;
+  title: string;
+  summary: string;
+  sections: Section[];
   onRegenerate: () => void;
   onOpenExport: () => void;
 }) {
@@ -18,9 +22,9 @@ export function SpecView({
               <span className="tag tag-accent">MVP spec</span>
               <span className="text-muted" style={{ fontSize: 12 }}>v1 · generated 14 Aug 2026</span>
             </div>
-            <h2 style={{ margin: 0, fontSize: 34 }}>{specTitle}</h2>
+            <h2 style={{ margin: 0, fontSize: 34 }}>{title}</h2>
             <p className="text-muted" style={{ fontSize: 14, margin: 0, maxWidth: 560 }}>
-              Web app for solo designers and developers invoicing 3–10 clients a month. Scoped to 8 weeks and a low-code build.
+              {summary}
             </p>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
@@ -31,7 +35,7 @@ export function SpecView({
         <hr className="hr" style={{ margin: "0 0 32px" }} />
 
         <div style={{ display: "grid", gap: 44 }}>
-          {SECTIONS.map((s) => (
+          {sections.map((s) => (
             <section key={s.id} id={s.id} style={{ display: "grid", gap: 14, scrollMarginTop: 24 }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
                 <span style={{ fontSize: 12, fontFamily: "var(--font-heading)", color: "var(--color-accent)" }}>{s.num}</span>
@@ -58,7 +62,7 @@ export function SpecView({
 
       <div style={{ position: "sticky", top: 0, height: "100vh", padding: "44px 20px", display: "grid", gap: 6, alignContent: "start", background: "linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 70%, transparent), transparent 70%)", boxShadow: "inset 1px 0 0 var(--color-divider)" }}>
         <span style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 38%, transparent)", padding: "0 10px 8px" }}>Sections</span>
-        {SECTIONS.map((s) => (
+        {sections.map((s) => (
           <a
             key={s.id}
             href={`#${s.id}`}

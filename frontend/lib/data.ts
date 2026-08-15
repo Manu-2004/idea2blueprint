@@ -1,4 +1,4 @@
-import type { Question, Section, SpecItem, Template } from "./types";
+import type { Question, Section, Spec, SpecItem, Template } from "./types";
 
 export const TEMPLATES: Record<string, Template> = {
   saas: {
@@ -302,6 +302,16 @@ export const SECTIONS: Section[] = [
     ],
   },
 ];
+
+// Used by the two entry points that skip real generation (Landing's "see a sample spec"
+// and Dashboard's "open" spec item) so SpecView can stay purely prop-driven instead of
+// importing SECTIONS itself.
+export const SAMPLE_SPEC: Spec = {
+  title: "Invoice chaser for freelancers",
+  summary:
+    "Web app for solo designers and developers invoicing 3–10 clients a month. Scoped to 8 weeks and a low-code build.",
+  sections: SECTIONS,
+};
 
 export const SPECS: SpecItem[] = [
   { title: "Invoice chaser for freelancers", meta: "Web · edited 2 hours ago", stage: "Complete", pct: "100%", status: "Ready", open: true },

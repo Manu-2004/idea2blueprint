@@ -1,5 +1,6 @@
 from blueprint_agents.constants import SECTION_META, SECTION_ORDER
 from blueprint_agents.schemas.common import RiskItem, Section, SectionGroup, SectionItem, Spec, SpecGroupDraft
+from blueprint_agents.schemas.events import NodeEvent
 from blueprint_agents.schemas.product import ProductOutput
 from blueprint_agents.schemas.technical import TechnicalOutput
 from blueprint_agents.schemas.ux import UXOutput
@@ -49,9 +50,14 @@ def build_spec(product: ProductOutput, ux: UXOutput, technical: TechnicalOutput)
         ),
     ]
     assert [section.id for section in sections] == SECTION_ORDER
-    return Spec(sections=sections)
+    return Spec(title=product.title, summary=product.summary, sections=sections)
 
 
 def assemble_node(state: GraphState) -> dict:
     spec = build_spec(state["product_output"], state["ux_output"], state["technical_output"])
-    return {"spec": spec, "trace": ["assemble ran"]}
+    round_ = state.get("revision_round", 0)
+    return {
+        "spec": spec,
+        "trace": ["assemble ran"],
+        "events": [NodeEvent(node="assemble", revision_round=round_)],
+    }

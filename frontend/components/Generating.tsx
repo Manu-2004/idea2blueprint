@@ -1,7 +1,49 @@
 import { GEN_LABELS } from "../lib/data";
+import type { JobError } from "../lib/types";
 import { SpinnerIcon } from "./icons";
 
-export function Generating({ genStep }: { genStep: number }) {
+const ERROR_COPY: Record<JobError["type"], string> = {
+  openai_rate_limit: "The model is rate-limited right now.",
+  openai_timeout: "The request to the model timed out.",
+  openai_content_policy: "That idea couldn't be processed as written — try rephrasing it.",
+  openai_error: "The model provider rejected the request.",
+  internal_error: "Something went wrong while generating your spec.",
+};
+
+export function Generating({
+  genStep,
+  error,
+  onRetry,
+  revisionRound = 0,
+  maxRevisionRounds = 0,
+}: {
+  genStep: number;
+  error?: JobError | null;
+  onRetry?: () => void;
+  revisionRound?: number;
+  maxRevisionRounds?: number;
+}) {
+  if (error) {
+    return (
+      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 40 }}>
+        <div className="card elev-sm" style={{ width: "100%", maxWidth: 420 }}>
+          <span className="card-kicker">Generation failed</span>
+          <p className="card-body" style={{ margin: 0 }}>{ERROR_COPY[error.type]}</p>
+          {onRetry && (
+            <a
+              href="#"
+              className="btn btn-primary"
+              style={{ justifySelf: "start" }}
+              onClick={(e) => { e.preventDefault(); onRetry(); }}
+            >
+              Try again
+            </a>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 40 }}>
       <div style={{ width: "100%", maxWidth: 420, display: "grid", gap: 28 }}>
@@ -28,7 +70,13 @@ export function Generating({ genStep }: { genStep: number }) {
             );
           })}
         </div>
-        <p className="text-muted" style={{ fontSize: 12, margin: 0 }}>Usually under a minute.</p>
+        {revisionRound > 0 ? (
+          <p className="text-muted" style={{ fontSize: 12, margin: 0 }}>
+            Refining based on review (round {revisionRound} of {maxRevisionRounds})
+          </p>
+        ) : (
+          <p className="text-muted" style={{ fontSize: 12, margin: 0 }}>Usually under a minute.</p>
+        )}
       </div>
     </div>
   );

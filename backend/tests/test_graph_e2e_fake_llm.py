@@ -18,6 +18,8 @@ def _brief():
 
 def _product_output():
     return ProductOutput(
+        title="Invoice Chaser",
+        summary="Web app for solo freelancers. Scoped to 8 weeks.",
         problem_lead="problem lead",
         problem_groups=[SpecGroupDraft(label="Primary user", items=["a user"])],
         features_lead="features lead",
@@ -48,7 +50,9 @@ def _technical_output(stack_label="Build"):
 
 def _invoke(factory):
     graph = build_graph(llm_factory=factory)
-    return graph.invoke({"brief": _brief(), "revision_round": 0, "max_revision_rounds": 2, "trace": []})
+    return graph.invoke(
+        {"brief": _brief(), "revision_round": 0, "max_revision_rounds": 2, "trace": [], "events": []}
+    )
 
 
 def _calls(trace, prefix):
@@ -74,6 +78,12 @@ def test_happy_path_approves_on_first_pass():
     assert len(_calls(result["trace"], "ux_agent ran")) == 1
     assert len(_calls(result["trace"], "technical_agent ran")) == 1
     assert len(_calls(result["trace"], "reviewer ran")) == 1
+
+    # events plumbing feeds the API layer's progress computation (api/progress.py) —
+    # confirm it lands in the graph result end-to-end, not just per-node in isolation.
+    from blueprint_agents.api.progress import compute_step
+
+    assert compute_step(result["events"]) == 6
 
 
 def test_blocker_on_technical_regenerates_both_siblings_then_approves():

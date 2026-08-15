@@ -3,3 +3,6 @@ node_modules/
 
 # next.js
 .next/
+
+# local env vars
+.env.local

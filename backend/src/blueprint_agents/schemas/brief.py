@@ -6,10 +6,12 @@ class Brief(BaseModel):
     `FormFields` in frontend/lib/types.ts — all free text, no enums, since the form lets
     users override any suggested chip with custom text."""
 
-    idea: str = Field(description="The idea in the user's own words, one or two sentences.")
-    who: str = Field(description="Who the product is for.")
-    problem: str = Field(description="What problem the product solves, in one line.")
-    platform: str = Field(description="Where the product has to work on day one (e.g. Web, Mobile).")
-    features: str = Field(description="What the product must do on day one.")
-    budget: str = Field(description="Timeline and budget constraints.")
-    comfort: str = Field(description="How technical the user is, which drives the stack recommendation.")
+    idea: str = Field(max_length=2000, description="The idea in the user's own words, one or two sentences.")
+    who: str = Field(max_length=500, description="Who the product is for.")
+    problem: str = Field(max_length=2000, description="What problem the product solves, in one line.")
+    platform: str = Field(max_length=500, description="Where the product has to work on day one (e.g. Web, Mobile).")
+    features: str = Field(max_length=2000, description="What the product must do on day one.")
+    budget: str = Field(max_length=500, description="Timeline and budget constraints.")
+    comfort: str = Field(
+        max_length=500, description="How technical the user is, which drives the stack recommendation."
+    )

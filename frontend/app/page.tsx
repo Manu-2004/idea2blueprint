@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { GEN_LABELS, QUESTIONS, TEMPLATES } from "../lib/data";
-import type { AuthMode, FormFields, Screen } from "../lib/types";
+import { createSpecJob, getSpecJob } from "../lib/api";
+import { QUESTIONS, SAMPLE_SPEC, TEMPLATES } from "../lib/data";
+import type { AuthMode, FormFields, JobError, Screen, Spec } from "../lib/types";
 import { Landing } from "../components/Landing";
 import { AuthScreen } from "../components/AuthScreen";
 import { AppShell } from "../components/AppShell";
@@ -13,7 +14,7 @@ import { Generating } from "../components/Generating";
 import { SpecView } from "../components/SpecView";
 import { ExportDialog } from "../components/ExportDialog";
 
-const SPEC_TITLE = "Invoice chaser for freelancers";
+const POLL_INTERVAL_MS = 2000;
 
 export default function Home() {
   const [screen, setScreen] = useState<Screen>("landing");
@@ -22,12 +23,17 @@ export default function Home() {
   const [formSource, setFormSource] = useState("Blank spec");
   const [step, setStep] = useState(0);
   const [genStep, setGenStep] = useState(0);
+  const [genError, setGenError] = useState<JobError | null>(null);
+  const [revisionRound, setRevisionRound] = useState(0);
+  const [maxRevisionRounds, setMaxRevisionRounds] = useState(0);
+  const [spec, setSpec] = useState<Spec | null>(null);
   const [showExport, setShowExport] = useState(false);
   const [format, setFormat] = useState("PDF");
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const go = (next: Screen) => {
     if (timerRef.current) clearInterval(timerRef.current);
+    if (next === "spec") setSpec((current) => current ?? SAMPLE_SPEC);
     setScreen(next);
     setGenStep(0);
     setStep(0);
@@ -44,18 +50,40 @@ export default function Home() {
   const generate = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     setGenStep(0);
+    setGenError(null);
+    setRevisionRound(0);
+    setMaxRevisionRounds(0);
     setScreen("generating");
-    timerRef.current = setInterval(() => {
-      setGenStep((s) => {
-        const next = s + 1;
-        if (next > GEN_LABELS.length) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          setScreen("spec");
-          return 0;
-        }
-        return next;
+
+    createSpecJob(form)
+      .then(({ job_id }) => {
+        timerRef.current = setInterval(async () => {
+          try {
+            const job = await getSpecJob(job_id);
+            setGenStep((prev) => Math.max(prev, job.progress.step));
+            setRevisionRound(job.progress.revision_round);
+            setMaxRevisionRounds(job.progress.max_revision_rounds);
+
+            if (job.status === "done" && job.spec) {
+              if (timerRef.current) clearInterval(timerRef.current);
+              setSpec(job.spec);
+              go("spec");
+            } else if (job.status === "failed") {
+              if (timerRef.current) clearInterval(timerRef.current);
+              setGenError(job.error ?? { type: "internal_error", message: "Something went wrong generating the spec." });
+            }
+          } catch {
+            if (timerRef.current) clearInterval(timerRef.current);
+            setGenError({ type: "internal_error", message: "Lost connection while generating your spec." });
+          }
+        }, POLL_INTERVAL_MS);
+      })
+      .catch(() => {
+        setGenError({
+          type: "internal_error",
+          message: "Couldn't start spec generation. Is the backend running?",
+        });
       });
-    }, 850);
   };
 
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
@@ -112,15 +140,29 @@ export default function Home() {
               onBack={handleBack}
             />
           )}
-          {screen === "generating" && <Generating genStep={genStep} />}
-          {screen === "spec" && (
-            <SpecView specTitle={SPEC_TITLE} onRegenerate={() => go("new")} onOpenExport={() => setShowExport(true)} />
+          {screen === "generating" && (
+            <Generating
+              genStep={genStep}
+              error={genError}
+              onRetry={generate}
+              revisionRound={revisionRound}
+              maxRevisionRounds={maxRevisionRounds}
+            />
+          )}
+          {screen === "spec" && spec && (
+            <SpecView
+              title={spec.title}
+              summary={spec.summary}
+              sections={spec.sections}
+              onRegenerate={() => go("new")}
+              onOpenExport={() => setShowExport(true)}
+            />
           )}
         </AppShell>
       )}
 
-      {showExport && (
-        <ExportDialog format={format} onSelectFormat={setFormat} onClose={() => setShowExport(false)} />
+      {showExport && spec && (
+        <ExportDialog spec={spec} format={format} onSelectFormat={setFormat} onClose={() => setShowExport(false)} />
       )}
     </>
   );

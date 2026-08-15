@@ -38,8 +38,9 @@ class Section(BaseModel):
 
 
 class Spec(BaseModel):
-    """Thin envelope so `spec.sections` can be dropped straight into the frontend's
-    `SECTIONS: Section[]` later. No title/idea echo — those live elsewhere in the
-    frontend's data model (`SpecItem`, `Template`), out of scope for this pass."""
+    """Field-for-field compatible with the frontend's spec display: a short product title,
+    a one-line byline, and the 6 sections."""
 
+    title: str
+    summary: str
     sections: list[Section]

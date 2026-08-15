@@ -16,6 +16,9 @@ they're deliberately out.
 3. Name the product-level risks (adoption, trust, positioning — NOT technical/delivery \
 risks, those belong to the Technical agent) each with a concrete mitigation, and the \
 assumptions about users or market that still need validating before betting on this.
+4. Name the product: 2-6 words, punchy, like a real product name a founder would use — not \
+a description of the idea. Write a one-line summary for the spec header: who it's for and \
+its scope (platform, timeline), in the same terse register as the rest of the spec.
 
 Be specific and concrete: name the actual user, the actual first workflow, real numbers \
 where the brief gives you room to infer them (invoice values, team sizes, weekly volumes). \

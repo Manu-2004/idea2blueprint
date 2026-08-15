@@ -5,6 +5,7 @@ from typing_extensions import TypedDict
 
 from blueprint_agents.schemas.brief import Brief
 from blueprint_agents.schemas.common import Spec
+from blueprint_agents.schemas.events import NodeEvent
 from blueprint_agents.schemas.product import ProductOutput
 from blueprint_agents.schemas.review import ReviewVerdict
 from blueprint_agents.schemas.technical import TechnicalOutput
@@ -27,3 +28,7 @@ class GraphState(TypedDict, total=False):
     # Append-only debug log ("node X ran, verdict Y"), surfaced via `--verbose`. Not part of
     # the frontend-facing output.
     trace: Annotated[list[str], operator.add]
+
+    # Append-only structured log of the same node completions, for the API layer to compute
+    # polling progress from (see api/progress.py) without parsing `trace` strings.
+    events: Annotated[list[NodeEvent], operator.add]

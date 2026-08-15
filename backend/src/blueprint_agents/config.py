@@ -34,6 +34,9 @@ class Settings(BaseSettings):
 
     max_revision_rounds: int = DEFAULT_MAX_REVISION_ROUNDS
 
+    # Comma-separated list of origins allowed to call the API directly (browser CORS).
+    cors_origins: str = "http://localhost:3000"
+
     def model_for(self, agent: AgentName) -> str:
         override = getattr(self, f"openai_model_{agent}")
         return override or self.openai_model_default

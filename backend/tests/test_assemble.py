@@ -8,6 +8,8 @@ from blueprint_agents.schemas.ux import UXOutput
 
 def _product():
     return ProductOutput(
+        title="Invoice Chaser",
+        summary="Web app for solo freelancers. Scoped to 8 weeks.",
         problem_lead="problem lead",
         problem_groups=[SpecGroupDraft(label="Primary user", items=["a user"])],
         features_lead="features lead",
@@ -40,6 +42,12 @@ def test_build_spec_has_six_sections_in_fixed_order():
     spec = build_spec(_product(), _ux(), _technical())
     assert [section.id for section in spec.sections] == SECTION_ORDER
     assert [section.num for section in spec.sections] == ["01", "02", "03", "04", "05", "06"]
+
+
+def test_build_spec_threads_title_and_summary_from_product():
+    spec = build_spec(_product(), _ux(), _technical())
+    assert spec.title == "Invoice Chaser"
+    assert spec.summary == "Web app for solo freelancers. Scoped to 8 weeks."
 
 
 def test_section_content_traces_back_to_the_right_agent():

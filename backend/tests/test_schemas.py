@@ -19,6 +19,8 @@ def test_sample_briefs_validate_against_brief_schema():
 
 def test_spec_round_trips_through_json():
     spec = Spec(
+        title="Invoice Chaser",
+        summary="Web app for solo freelancers. Scoped to 8 weeks.",
         sections=[
             Section(
                 id="problem",
