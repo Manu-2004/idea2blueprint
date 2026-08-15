@@ -43,8 +43,8 @@ export function SpecView({
               </div>
               <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 82%, transparent)", textWrap: "pretty" }}>{s.lead}</p>
               {s.groups.map((g) => (
-                <div key={g.label} style={{ display: "grid", gap: 8, paddingTop: 6 }}>
-                  <span style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>{g.label}</span>
+                <div key={g.label} style={{ display: "grid", gap: 8, paddingTop: 10 }}>
+                  <span style={{ fontSize: 11, fontFamily: "var(--font-heading)", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-accent)" }}>{g.label}</span>
                   <div style={{ display: "grid", gap: 7 }}>
                     {g.items.map((it) => (
                       <div key={it.text} style={{ display: "grid", gridTemplateColumns: "14px 1fr", gap: 10, fontSize: 14, lineHeight: 1.55 }}>

@@ -210,17 +210,17 @@ export const SECTIONS: Section[] = [
         label: "Setup",
         items: [
           { text: "As a freelancer, I connect Stripe once and see my open invoices without re-entering them." },
-          { text: "As a freelancer, I upload a CSV when a client pays me outside Stripe." },
-          { text: "As a freelancer, I pick a reminder cadence once and have it apply to every new invoice." },
+          { text: "When a client pays me outside Stripe, I upload a CSV to keep the board accurate." },
+          { text: "I pick a reminder cadence once and have it apply to every new invoice." },
         ],
       },
       {
         label: "Day to day",
         items: [
           { text: "As a freelancer, I open the board and see the single largest overdue invoice first." },
-          { text: "As a freelancer, I approve a queued reminder in one click, or edit the wording before it goes." },
-          { text: "As a freelancer, I pause reminders on an invoice when a client tells me payment is coming." },
-          { text: "As a freelancer, I see that a reminder was sent and opened, so I do not chase twice." },
+          { text: "I approve a queued reminder in one click, or edit the wording before it goes." },
+          { text: "When a client tells me payment is coming, I pause reminders on that invoice." },
+          { text: "I see that a reminder was sent and opened, so I do not chase twice." },
         ],
       },
     ],
@@ -234,20 +234,20 @@ export const SECTIONS: Section[] = [
       {
         label: "First run — signup to first invoice",
         items: [
-          { text: "Sign up with email → connect Stripe or upload CSV → confirm the imported list → accept the default cadence → land on the board with reminders queued." },
+          { text: "Sign up with email -> connect Stripe or upload CSV -> confirm the imported list -> accept the default cadence -> land on the board with reminders queued." },
           { text: "Fallback: no invoices to import. Offer manual entry of one invoice so the board is never empty." },
         ],
       },
       {
         label: "Reminder approval",
         items: [
-          { text: "Digest email or board badge → queued reminders view → read the draft → send, edit or skip → send is logged on the invoice timeline." },
+          { text: "Digest email or board badge -> queued reminders view -> read the draft -> send, edit or skip -> send is logged on the invoice timeline." },
         ],
       },
       {
         label: "Invoice paid",
         items: [
-          { text: "Stripe webhook marks paid → invoice moves to paid, remaining reminders cancel automatically → user sees a confirmation on the board." },
+          { text: "Stripe webhook marks paid -> invoice moves to paid, remaining reminders cancel automatically -> user sees a confirmation on the board." },
           { text: "Manual case: user marks paid themselves, with the same cancellation behaviour." },
         ],
       },

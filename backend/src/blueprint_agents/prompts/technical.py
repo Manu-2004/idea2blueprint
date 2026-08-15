@@ -20,7 +20,7 @@ infrastructure a reader might expect that you're explicitly NOT including yet, a
 Also name technical/delivery risks (scaling, third-party integration reliability, \
 feasibility within the stated timeline — NOT product/market risks, those belong to the \
 Product agent) each with a concrete mitigation, and any technical assumptions that need \
-validating.
+validating. Keep each risk and assumption to one short, sharp sentence, not a paragraph.
 
 Ground your stack choice in the Product agent's "Must have" features below — a stack \
 detail should trace back to a specific must-have feature or to the stated budget/comfort, \

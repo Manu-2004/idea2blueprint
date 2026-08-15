@@ -15,10 +15,19 @@ MVP" — the "will not have" list should name things a reader would expect and e
 they're deliberately out.
 3. Name the product-level risks (adoption, trust, positioning — NOT technical/delivery \
 risks, those belong to the Technical agent) each with a concrete mitigation, and the \
-assumptions about users or market that still need validating before betting on this.
-4. Name the product: 2-6 words, punchy, like a real product name a founder would use — not \
-a description of the idea. Write a one-line summary for the spec header: who it's for and \
-its scope (platform, timeline), in the same terse register as the rest of the spec.
+assumptions about users or market that still need validating before betting on this. Keep \
+each risk and assumption to one short, sharp sentence — a reader should get the point in a \
+glance, not read a paragraph to find it.
+4. Name the product: 1-3 words, real brand name a founder would actually put on a website, \
+not a literal mashup of the feature and the audience. Avoid the standard AI-naming reflexes \
+— no generic suffixes ("-ly", "-io", "-ify"), no stapled-together descriptor words ("Flow", \
+"Hub", "Sync", "Pilot", "Genius", "Wise", "AI"), and no "[Feature] for [Audience]" template. \
+Instead find one word or invented word that captures the product's angle or personality — \
+the kind of name that could survive as a logo. Test it: if the name could be swapped onto a \
+different, unrelated product without anyone noticing, it's too generic — try again. Write a \
+separate one-line summary for the spec header that does the literal "who it's for and its \
+scope" job the name itself is no longer doing (platform, timeline), in the terse, confident \
+register of the rest of the spec.
 
 Be specific and concrete: name the actual user, the actual first workflow, real numbers \
 where the brief gives you room to infer them (invoice values, team sizes, weekly volumes). \

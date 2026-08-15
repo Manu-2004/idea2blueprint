@@ -9,12 +9,17 @@ class UXOutput(BaseModel):
 
     stories_lead: str = Field(description="1-2 sentence prose introduction to the user stories.")
     story_groups: list[SpecGroupDraft] = Field(
-        description="Expected groups: 'Setup' and 'Day to day'. Each item is a testable "
-        "'As a <user>, I <action>' story."
+        description="Expected groups: 'Setup' and 'Day to day'. Each item is a testable, "
+        "concrete action tied to the actual named persona from the brief/problem framing "
+        "(e.g. 'freelancer'), never the literal word 'user'. Vary the opening across the "
+        "group — do not start every item with the identical 'As a <persona>, I ...' clause."
     )
 
     flows_lead: str = Field(description="1-2 sentence prose introduction to the user flows.")
     flow_groups: list[SpecGroupDraft] = Field(
         description="One group per named flow (e.g. 'First run — signup to first invoice'). "
-        "Each group's items are the main path step-by-step, plus an optional fallback item."
+        "The first item is the main path as ONE string with steps joined by ' -> ' (plain "
+        "ASCII arrow, e.g. 'Sign up -> connect Stripe -> confirm invoices -> land on the "
+        "board'; never the unicode '→' character). An optional second item starting with "
+        "'Fallback:' covers the most likely way the path breaks."
     )

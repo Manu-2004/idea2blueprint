@@ -13,8 +13,8 @@ class RiskItem(BaseModel):
     """A single risk with its mitigation, rendered at assemble time as one bullet:
     '{risk} Mitigation — {mitigation}.'"""
 
-    risk: str = Field(description="The risk, stated plainly.")
-    mitigation: str = Field(description="The concrete mitigation for this risk.")
+    risk: str = Field(description="The risk, stated plainly in one short sentence.")
+    mitigation: str = Field(description="The concrete mitigation for this risk, in one short sentence.")
 
 
 # --- final output contract, field-for-field identical to frontend/lib/types.ts ---

@@ -16,5 +16,6 @@ class TechnicalOutput(BaseModel):
 
     technical_risks: list[RiskItem] = Field(description="Technical/delivery risks: scaling, integrations, feasibility.")
     technical_assumptions: list[str] = Field(
-        default_factory=list, description="Technical assumptions that need validating, if any."
+        default_factory=list,
+        description="Technical assumptions that need validating, if any — one short sentence each.",
     )

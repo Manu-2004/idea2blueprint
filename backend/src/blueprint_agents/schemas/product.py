@@ -7,7 +7,11 @@ class ProductOutput(BaseModel):
     """Product agent's output: problem/user framing, feature scoping, and product-level
     risks. Feeds section 01 (problem), 02 (features), and half of section 06 (risks)."""
 
-    title: str = Field(description="A short, punchy product name, 2-6 words, e.g. 'Invoice chaser for freelancers'.")
+    title: str = Field(
+        description="A real brand name, 1-3 words, e.g. 'Ledgerbird' or 'Tabsy' — not a "
+        "literal '[Feature] for [Audience]' description and not a generic AI-naming mashup "
+        "('InvoiceFlow', 'TaskHub'). The who/what/scope belongs in `summary`, not here."
+    )
     summary: str = Field(
         description="One-line byline for the spec header: who it's for and its scope, e.g. "
         "'Web app for solo designers and developers invoicing 3-10 clients a month. Scoped "
@@ -26,4 +30,6 @@ class ProductOutput(BaseModel):
 
     risks_lead: str = Field(description="2-3 sentence prose introduction to the risks and assumptions section.")
     product_risks: list[RiskItem] = Field(description="Product/market risks: adoption, trust, positioning.")
-    product_assumptions: list[str] = Field(description="Assumptions about users/market that need validating.")
+    product_assumptions: list[str] = Field(
+        description="Assumptions about users/market that need validating, one short sentence each."
+    )
