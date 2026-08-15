@@ -14,7 +14,7 @@ import {
 } from "../lib/api";
 import { login, logout as logoutRequest, me, signup } from "../lib/auth";
 import { QUESTIONS, SAMPLE_SPEC, TEMPLATES } from "../lib/data";
-import type { AuthMode, FormFields, JobError, Screen, Spec, SpecJobSummary, User } from "../lib/types";
+import type { AuthMode, FormFields, JobError, JobStatus, Screen, Spec, SpecJobSummary, User } from "../lib/types";
 import { Landing } from "../components/Landing";
 import { AuthScreen } from "../components/AuthScreen";
 import { AppShell } from "../components/AppShell";
@@ -24,8 +24,10 @@ import { NewSpecForm } from "../components/NewSpecForm";
 import { Generating } from "../components/Generating";
 import { SpecView } from "../components/SpecView";
 import { ExportDialog } from "../components/ExportDialog";
+import { ToastStack, type ToastItem, type ToastTone } from "../components/Toast";
 
 const POLL_INTERVAL_MS = 2000;
+const BACKGROUND_POLL_MS = 4000;
 
 export default function Home() {
   const [screen, setScreen] = useState<Screen>("landing");
@@ -46,7 +48,19 @@ export default function Home() {
   const [specsLoading, setSpecsLoading] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [format, setFormat] = useState("PDF");
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const activeJobIdRef = useRef<string | null>(null);
+  const specsRef = useRef<SpecJobSummary[]>([]);
+  const knownStatusesRef = useRef<Map<string, JobStatus>>(new Map());
+  const toastIdRef = useRef(0);
+
+  const pushToast = (message: string, tone: ToastTone = "success") => {
+    const id = ++toastIdRef.current;
+    setToasts((t) => [...t, { id, message, tone }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 5000);
+  };
+  const dismissToast = (id: number) => setToasts((t) => t.filter((x) => x.id !== id));
 
   useEffect(() => {
     const token = getToken();
@@ -77,11 +91,37 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  useEffect(() => { specsRef.current = specs; }, [specs]);
+
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
+
+  // Keeps dashboard badges live and fires a "spec ready" notification even after the user
+  // has navigated away from the generating screen (which stops the fine-grained poll below).
+  useEffect(() => {
+    if (!user) return;
+    const id = setInterval(() => {
+      const hasActive = specsRef.current.some((s) => s.status === "pending" || s.status === "running");
+      if (!hasActive) return;
+      listSpecJobs()
+        .then((next) => {
+          for (const job of next) {
+            const prevStatus = knownStatusesRef.current.get(job.id);
+            if (prevStatus === "pending" || prevStatus === "running") {
+              if (job.status === "done") pushToast(`"${job.title}" is ready.`, "success");
+              else if (job.status === "failed") pushToast(`"${job.title}" failed to generate.`, "error");
+            }
+          }
+          for (const job of next) knownStatusesRef.current.set(job.id, job.status);
+          setSpecs(next);
+        })
+        .catch(() => {});
+    }, BACKGROUND_POLL_MS);
+    return () => clearInterval(id);
+  }, [user]);
 
   const go = (next: Screen) => {
     if (timerRef.current) clearInterval(timerRef.current);
-    if (next === "spec") setSpec((current) => current ?? SAMPLE_SPEC);
+    activeJobIdRef.current = null;
     setScreen(next);
     setGenStep(0);
     setStep(0);
@@ -105,25 +145,35 @@ export default function Home() {
 
   const pollJob = (jobId: string) => {
     if (timerRef.current) clearInterval(timerRef.current);
+    activeJobIdRef.current = jobId;
 
     const tick = async () => {
       try {
         const job = await getSpecJob(jobId);
+        // The user may have navigated away (or started tracking a different job) while this
+        // request was in flight — clearInterval doesn't cancel an already-dispatched fetch, so
+        // without this check a late response could yank the user back to a screen they left.
+        if (activeJobIdRef.current !== jobId) return;
+
         setGenStep((prev) => Math.max(prev, job.progress.step));
         setRevisionRound(job.progress.revision_round);
         setMaxRevisionRounds(job.progress.max_revision_rounds);
 
         if (job.status === "done" && job.spec) {
           if (timerRef.current) clearInterval(timerRef.current);
+          activeJobIdRef.current = null;
           setSpec(job.spec);
           go("spec");
           refreshSpecs();
+          pushToast(`"${job.spec.title}" is ready.`, "success");
         } else if (job.status === "failed") {
           if (timerRef.current) clearInterval(timerRef.current);
+          activeJobIdRef.current = null;
           setGenError(job.error ?? { type: "internal_error", message: "Something went wrong generating the spec." });
           refreshSpecs();
         }
       } catch {
+        if (activeJobIdRef.current !== jobId) return;
         if (timerRef.current) clearInterval(timerRef.current);
         setGenError({ type: "internal_error", message: "Lost connection while generating your spec." });
       }
@@ -135,6 +185,7 @@ export default function Home() {
 
   const generate = () => {
     if (timerRef.current) clearInterval(timerRef.current);
+    activeJobIdRef.current = null;
     setGenStep(0);
     setGenError(null);
     setRevisionRound(0);
@@ -180,6 +231,7 @@ export default function Home() {
 
   const openSpec = (id: string) => {
     if (timerRef.current) clearInterval(timerRef.current);
+    activeJobIdRef.current = null;
     getSpecJob(id)
       .then((job) => {
         if (job.status === "draft") {
@@ -246,7 +298,7 @@ export default function Home() {
   return (
     <>
       {screen === "landing" && (
-        <Landing onSignup={() => { setAuthMode("signup"); setScreen("auth"); }} onSampleSpec={() => go("spec")} />
+        <Landing onSignup={() => { setAuthMode("signup"); setScreen("auth"); }} onSampleSpec={() => { setSpec(SAMPLE_SPEC); go("spec"); }} />
       )}
 
       {screen === "auth" && (
@@ -310,6 +362,8 @@ export default function Home() {
       {showExport && spec && (
         <ExportDialog spec={spec} format={format} onSelectFormat={setFormat} onClose={() => setShowExport(false)} />
       )}
+
+      <ToastStack toasts={toasts} onDismiss={dismissToast} />
     </>
   );
 }
