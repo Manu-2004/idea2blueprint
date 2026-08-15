@@ -51,14 +51,19 @@ export default function Home() {
       .finally(() => setAuthChecked(true));
   }, []);
 
-  useEffect(() => {
-    if (screen !== "dashboard" || !user) return;
+  const refreshSpecs = () => {
+    if (!user) return;
     setSpecsLoading(true);
     listSpecJobs()
       .then(setSpecs)
       .catch(() => setSpecs([]))
       .finally(() => setSpecsLoading(false));
-  }, [screen, user]);
+  };
+
+  useEffect(() => {
+    refreshSpecs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
@@ -92,9 +97,11 @@ export default function Home() {
           if (timerRef.current) clearInterval(timerRef.current);
           setSpec(job.spec);
           go("spec");
+          refreshSpecs();
         } else if (job.status === "failed") {
           if (timerRef.current) clearInterval(timerRef.current);
           setGenError(job.error ?? { type: "internal_error", message: "Something went wrong generating the spec." });
+          refreshSpecs();
         }
       } catch {
         if (timerRef.current) clearInterval(timerRef.current);
@@ -115,7 +122,10 @@ export default function Home() {
     setScreen("generating");
 
     createSpecJob(form)
-      .then(({ job_id }) => pollJob(job_id))
+      .then(({ job_id }) => {
+        refreshSpecs();
+        pollJob(job_id);
+      })
       .catch(() => {
         setGenError({
           type: "internal_error",
@@ -195,7 +205,7 @@ export default function Home() {
       )}
 
       {(screen === "dashboard" || screen === "templates" || screen === "new" || screen === "generating" || screen === "spec") && (
-        <AppShell screen={screen} user={user} onGo={go} onNew={() => go("new")} onLogout={handleLogout}>
+        <AppShell screen={screen} user={user} specsUsed={specs.length} onGo={go} onNew={() => go("new")} onLogout={handleLogout}>
           {screen === "dashboard" && (
             <Dashboard
               specs={specs}
