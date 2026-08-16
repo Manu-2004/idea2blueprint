@@ -15,6 +15,7 @@ dependencies = [
 
 [project.scripts]
 blueprint-agents = "blueprint_agents.cli:main"
+blueprint-agents-api = "blueprint_agents.api.serve:main"
 
 [project.optional-dependencies]
 dev = [
