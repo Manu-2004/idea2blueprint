@@ -16,13 +16,22 @@ from blueprint_agents.state import GraphState
 def route_after_intake(state: GraphState):
     """Gate the brief before the Product/UX/Technical agents run at all.
 
-    - Relevant brief -> proceed into the normal pipeline.
+    - Relevant, unambiguous brief -> proceed into the normal pipeline.
     - Irrelevant/gibberish/off-topic brief -> end the graph immediately with no `spec`,
       so `api/runner.py` can classify it as a rejection rather than burn 3 more LLM calls
       drafting a spec for input that was never a real idea.
+    - Relevant but ambiguous, and the user hasn't answered clarifying questions yet -> end
+      the graph with no `spec` too; `api/runner.py` pauses the job as `needs_input` instead
+      of failing it. Once the brief carries answers (`brief.clarifications`), this branch is
+      skipped even if the intake agent still flags `needs_clarification` — clarification is a
+      single round, enforced here rather than trusted to the LLM alone.
     """
     verdict: IntakeVerdict = state["intake"]
-    return "product_agent" if verdict.is_relevant else END
+    if not verdict.is_relevant:
+        return END
+    if verdict.needs_clarification and not state["brief"].clarifications:
+        return END
+    return "product_agent"
 
 
 def route_after_review(state: GraphState):

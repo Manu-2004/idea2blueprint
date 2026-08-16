@@ -9,6 +9,7 @@ const STATUS_BADGE: Record<SpecJobSummary["status"], { label: string; bg: string
   done: { label: "Ready", bg: "oklch(0.355 0.062 150)", fg: "oklch(0.930 0.048 150)" },
   pending: { label: "Generating", bg: "oklch(0.355 0.062 85)", fg: "oklch(0.930 0.060 85)" },
   running: { label: "Generating", bg: "oklch(0.355 0.062 85)", fg: "oklch(0.930 0.060 85)" },
+  needs_input: { label: "Needs input", bg: "oklch(0.355 0.062 85)", fg: "oklch(0.930 0.060 85)" },
   failed: { label: "Failed", bg: "oklch(0.355 0.09 25)", fg: "oklch(0.930 0.07 25)" },
 };
 

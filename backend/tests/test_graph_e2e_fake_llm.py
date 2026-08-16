@@ -1,7 +1,7 @@
 from blueprint_agents.graph import build_graph
 from blueprint_agents.schemas.brief import Brief
 from blueprint_agents.schemas.common import RiskItem, SpecGroupDraft
-from blueprint_agents.schemas.intake import IntakeVerdict
+from blueprint_agents.schemas.intake import ClarifyingQuestion, IntakeVerdict
 from blueprint_agents.schemas.product import ProductOutput
 from blueprint_agents.schemas.review import Issue, ReviewVerdict
 from blueprint_agents.schemas.technical import TechnicalOutput
@@ -13,11 +13,11 @@ def _relevant_intake():
     return IntakeVerdict(is_relevant=True, reason="Describes a real product idea.")
 
 
-def _brief():
+def _brief(clarifications=None):
     return Brief(
         idea="An idea", who="Someone", problem="A problem",
         platform="Web", features="A feature", budget="8 weeks",
-        comfort="Some code",
+        comfort="Some code", clarifications=clarifications or [],
     )
 
 
@@ -53,10 +53,17 @@ def _technical_output(stack_label="Build"):
     )
 
 
-def _invoke(factory):
+def _invoke(factory, brief=None, used_titles=None):
     graph = build_graph(llm_factory=factory)
     return graph.invoke(
-        {"brief": _brief(), "revision_round": 0, "max_revision_rounds": 2, "trace": [], "events": []}
+        {
+            "brief": brief or _brief(),
+            "used_titles": used_titles or [],
+            "revision_round": 0,
+            "max_revision_rounds": 2,
+            "trace": [],
+            "events": [],
+        }
     )
 
 
@@ -173,6 +180,27 @@ def test_cap_reached_forces_assemble_even_with_persistent_blockers():
     assert len(_calls(result["trace"], "reviewer ran")) == 3
 
 
+def test_product_agent_retries_when_title_collides_with_a_used_title():
+    approved = ReviewVerdict(approved=True, issues=[], summary="looks good")
+    colliding = _product_output()  # title="Invoice Chaser"
+    fresh = ProductOutput(**{**colliding.model_dump(), "title": "Tabsy"})
+
+    factory = make_llm_factory(
+        {
+            "intake": _relevant_intake(),
+            "product": [colliding, fresh],
+            "ux": _ux_output(),
+            "technical": _technical_output(),
+            "reviewer": [approved],
+        }
+    )
+    result = _invoke(factory, used_titles=["Invoice Chaser"])
+
+    assert result["spec"].title == "Tabsy"
+    # Still one node-level pass — the retries happen inside the single product_agent call.
+    assert len(_calls(result["trace"], "product_agent ran")) == 1
+
+
 def test_irrelevant_brief_ends_at_intake_without_running_other_agents():
     rejected = IntakeVerdict(is_relevant=False, reason="This is song lyrics, not a product idea.")
     factory = make_llm_factory({"intake": rejected})
@@ -184,3 +212,47 @@ def test_irrelevant_brief_ends_at_intake_without_running_other_agents():
     assert _calls(result["trace"], "ux_agent ran") == []
     assert _calls(result["trace"], "technical_agent ran") == []
     assert _calls(result["trace"], "reviewer ran") == []
+
+
+def test_ambiguous_brief_ends_at_intake_pending_clarification():
+    needs_clarification = IntakeVerdict(
+        is_relevant=True,
+        reason="Real idea, but ambiguous.",
+        needs_clarification=True,
+        questions=[ClarifyingQuestion(key="audience", question="Who is this for?", choices=["Teams", "Individuals"])],
+    )
+    factory = make_llm_factory({"intake": needs_clarification})
+    result = _invoke(factory)
+
+    assert result.get("spec") is None
+    assert result["intake"].needs_clarification is True
+    assert _calls(result["trace"], "product_agent ran") == []
+    assert _calls(result["trace"], "ux_agent ran") == []
+    assert _calls(result["trace"], "technical_agent ran") == []
+    assert _calls(result["trace"], "reviewer ran") == []
+
+
+def test_answered_clarification_proceeds_through_the_full_pipeline():
+    approved = ReviewVerdict(approved=True, issues=[], summary="looks good")
+    still_ambiguous = IntakeVerdict(
+        is_relevant=True,
+        reason="Answered now.",
+        needs_clarification=True,  # even if the LLM still flags this, code enforces one round
+        questions=[ClarifyingQuestion(key="audience", question="Who is this for?", choices=["Teams"])],
+    )
+    factory = make_llm_factory(
+        {
+            "intake": still_ambiguous,
+            "product": _product_output(),
+            "ux": _ux_output(),
+            "technical": _technical_output(),
+            "reviewer": [approved],
+        }
+    )
+    answered_brief = _brief(clarifications=[
+        {"key": "audience", "question": "Who is this for?", "answer": "Teams"}
+    ])
+    result = _invoke(factory, brief=answered_brief)
+
+    assert result["spec"] is not None
+    assert len(result["spec"].sections) == 6

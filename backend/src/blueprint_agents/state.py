@@ -16,6 +16,10 @@ from blueprint_agents.schemas.ux import UXOutput
 class GraphState(TypedDict, total=False):
     brief: Brief
 
+    # Product names from this user's previously generated specs (see api/jobs.py::
+    # JobStore.list_titles_for_user), passed so the Product agent avoids proposing one again.
+    used_titles: list[str]
+
     intake: Optional[IntakeVerdict]
 
     product_output: Optional[ProductOutput]

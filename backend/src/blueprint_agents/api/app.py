@@ -12,6 +12,7 @@ from blueprint_agents.api.progress import compute_step
 from blueprint_agents.api.runner import run_job
 from blueprint_agents.api.schemas import (
     AuthResponse,
+    ClarifyAnswersRequest,
     HandoffResponse,
     JobCreateResponse,
     JobStatusResponse,
@@ -160,6 +161,26 @@ def generate_from_draft(
     return JobCreateResponse(job_id=job.id, status="pending")
 
 
+@app.post("/api/spec-jobs/{job_id}/clarify", status_code=202, response_model=JobCreateResponse)
+def submit_clarification(
+    job_id: str,
+    body: ClarifyAnswersRequest,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
+) -> JobCreateResponse:
+    """Answers the intake agent's clarifying questions and resumes generation. Only valid
+    while the job is paused at `needs_input` — the graph enforces a single clarification
+    round (see graph.py::route_after_intake), so this can only be called once per job."""
+
+    job = _get_owned_job_or_404(job_id, current_user)
+    if job.status != "needs_input":
+        raise HTTPException(status_code=409, detail="This spec isn't waiting on clarification.")
+    updated_brief = job.brief.model_copy(update={"clarifications": body.answers})
+    store.update(job_id, brief=updated_brief, status="pending")
+    background_tasks.add_task(run_job, job.id, store)
+    return JobCreateResponse(job_id=job.id, status="pending")
+
+
 @app.post("/api/spec-jobs/{job_id}/handoff", response_model=HandoffResponse)
 def create_handoff(job_id: str, current_user: User = Depends(get_current_user)) -> HandoffResponse:
     """Generates (or regenerates) the coding-agent kickoff kit for a finished spec: a
@@ -220,6 +241,7 @@ def get_spec_job(job_id: str, current_user: User = Depends(get_current_user)) ->
         brief=job.brief,
         spec=job.spec,
         error=job.error,
+        clarifying_questions=job.clarifying_questions,
         agent_prompt=job.agent_prompt,
         agents_md=job.agents_md,
         created_at=job.created_at,

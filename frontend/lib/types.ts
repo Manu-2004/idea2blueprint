@@ -5,6 +5,7 @@ export type Screen =
   | "templates"
   | "new"
   | "generating"
+  | "clarify"
   | "spec";
 
 export type AuthMode = "login" | "signup";
@@ -52,7 +53,19 @@ export type Spec = {
   sections: Section[];
 };
 
-export type JobStatus = "draft" | "pending" | "running" | "done" | "failed";
+export type JobStatus = "draft" | "pending" | "running" | "done" | "failed" | "needs_input";
+
+export type ClarifyingQuestion = {
+  key: string;
+  question: string;
+  choices: string[];
+};
+
+export type ClarificationAnswer = {
+  key: string;
+  question: string;
+  answer: string;
+};
 
 export type JobErrorType =
   | "openai_rate_limit"
@@ -84,6 +97,7 @@ export type JobStatusResponse = {
   brief: FormFields;
   spec: Spec | null;
   error: JobError | null;
+  clarifying_questions: ClarifyingQuestion[] | null;
   agent_prompt: string | null;
   agents_md: string | null;
   created_at: string;

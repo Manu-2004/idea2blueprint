@@ -64,26 +64,97 @@ export function Generating({
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 40 }}>
-      <div style={{ width: "100%", maxWidth: 420, display: "grid", gap: 28 }}>
+    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 40, position: "relative", overflow: "hidden" }}>
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: 520,
+          height: 520,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, color-mix(in srgb, var(--color-accent) 22%, transparent) 0%, transparent 70%)",
+          filter: "blur(10px)",
+          animation: "gen-orb-pulse 4.5s ease-in-out infinite",
+          pointerEvents: "none",
+        }}
+      />
+      <div style={{ width: "100%", maxWidth: 420, display: "grid", gap: 32, position: "relative" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <SpinnerIcon size={18} />
           <h4 style={{ margin: 0 }}>Building your blueprint</h4>
         </div>
-        <div style={{ display: "grid", gap: 14 }}>
+        <div style={{ display: "grid" }}>
           {GEN_LABELS.map((label, i) => {
-            const opacity = i < genStep ? 1 : i === genStep ? 0.95 : 0.35;
-            const fill = i < genStep ? "var(--color-accent)" : "transparent";
-            const mark = i < genStep ? "✓" : "";
-            const scale = i < genStep ? 1 : i === genStep ? 0.45 : 0;
+            const done = i < genStep;
+            const active = i === genStep;
+            const opacity = done ? 1 : active ? 1 : 0.35;
+            const last = i === GEN_LABELS.length - 1;
+
+            let lineState: "done" | "active" | "pending" = "pending";
+            if (i < genStep - 1) lineState = "done";
+            else if (i === genStep - 1) lineState = "active";
+
+            const lineBackground =
+              lineState === "done"
+                ? "var(--color-accent)"
+                : lineState === "active"
+                  ? "linear-gradient(90deg, var(--color-accent) 0%, color-mix(in srgb, var(--color-accent) 90%, transparent) 20%, transparent 40%, transparent 60%, color-mix(in srgb, var(--color-accent) 90%, transparent) 80%, var(--color-accent) 100%)"
+                  : "var(--color-neutral-800)";
+
             return (
-              <div key={label} style={{ display: "grid", gridTemplateColumns: "16px 1fr", gap: 12, alignItems: "center", opacity }}>
-                <span style={{ width: 16, height: 16, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 9, border: "1px solid var(--color-accent)", background: fill, color: "var(--color-bg)" }}>{mark}</span>
-                <div style={{ display: "grid", gap: 6 }}>
-                  <span style={{ fontSize: 14 }}>{label}</span>
-                  <div style={{ height: 2, background: "var(--color-neutral-800)", borderRadius: 2, overflow: "hidden" }}>
-                    <div style={{ height: "100%", background: "var(--color-accent)", transformOrigin: "left", width: "100%", transform: `scaleX(${scale})` }} />
-                  </div>
+              <div key={label} style={{ display: "grid", gridTemplateColumns: "20px 1fr", columnGap: 14, opacity, transition: "opacity 0.5s ease" }}>
+                <div style={{ display: "grid", justifyItems: "center" }}>
+                  <span
+                    key={`${label}-${done}`}
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: "50%",
+                      display: "grid",
+                      placeItems: "center",
+                      fontSize: 10,
+                      border: `1px solid ${done || active ? "var(--color-accent)" : "var(--color-neutral-700)"}`,
+                      background: done ? "var(--color-accent)" : "transparent",
+                      color: "var(--color-bg)",
+                      transition: "background 0.4s ease, border-color 0.4s ease",
+                      animation: done
+                        ? "gen-dot-flash 0.7s ease-out"
+                        : active
+                          ? "gen-ring-pulse 1.8s ease-out infinite"
+                          : undefined,
+                    }}
+                  >
+                    {done ? "✓" : active ? <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--color-accent)" }} /> : ""}
+                  </span>
+                  {!last && (
+                    <div
+                      style={{
+                        width: 2,
+                        flex: 1,
+                        minHeight: 26,
+                        marginTop: 2,
+                        borderRadius: 2,
+                        background: lineBackground,
+                        backgroundSize: lineState === "active" ? "220% 100%" : undefined,
+                        animation: lineState === "active" ? "gen-line-shimmer 1.6s linear infinite" : undefined,
+                        transition: "background 0.6s ease",
+                      }}
+                    />
+                  )}
+                </div>
+                <div style={{ paddingBottom: last ? 0 : 22 }}>
+                  <span
+                    style={{
+                      fontSize: 14,
+                      color: done || active ? "var(--color-text)" : "var(--color-neutral-500)",
+                      animation: active ? "gen-text-glow 1.8s ease-in-out infinite" : undefined,
+                    }}
+                  >
+                    {label}
+                  </span>
                 </div>
               </div>
             );

@@ -3,10 +3,11 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-from blueprint_agents.schemas.brief import Brief
+from blueprint_agents.schemas.brief import Brief, ClarificationAnswer
 from blueprint_agents.schemas.common import Spec
+from blueprint_agents.schemas.intake import ClarifyingQuestion
 
-JobStatus = Literal["draft", "pending", "running", "done", "failed"]
+JobStatus = Literal["draft", "pending", "running", "done", "failed", "needs_input"]
 
 # Best-effort classification of what went wrong, so the frontend can distinguish "try
 # again" (rate limit/timeout) from "rephrase your idea" (content policy) from a bug on our
@@ -44,10 +45,15 @@ class JobStatusResponse(BaseModel):
     brief: Brief
     spec: Optional[Spec] = None
     error: Optional[JobError] = None
+    clarifying_questions: Optional[list[ClarifyingQuestion]] = None
     agent_prompt: Optional[str] = None
     agents_md: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+
+
+class ClarifyAnswersRequest(BaseModel):
+    answers: list[ClarificationAnswer]
 
 
 class HandoffResponse(BaseModel):

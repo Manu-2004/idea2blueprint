@@ -70,6 +70,9 @@ class Database:
             # Soft-delete marker: deleting a spec must not shrink the monthly usage count
             # (which counts everything ever created this month), only hide it from listings.
             self._add_column_if_missing("spec_jobs", "deleted_at", "TEXT")
+            # Populated when the intake agent pauses a job at status="needs_input" — the
+            # questions the user needs to answer before generation resumes.
+            self._add_column_if_missing("spec_jobs", "clarifying_questions_json", "TEXT")
 
     def _add_column_if_missing(self, table: str, column: str, sql_type: str) -> None:
         existing = {row["name"] for row in self.conn.execute(f"PRAGMA table_info({table})")}

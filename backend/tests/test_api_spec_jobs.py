@@ -170,3 +170,94 @@ def test_jobs_persist_across_a_fresh_store_on_the_same_db_file(tmp_path, monkeyp
     assert job.brief.idea == SAMPLE_BRIEF["idea"]
 
     get_settings.cache_clear()
+
+
+def test_clarify_requires_needs_input_status(client):
+    token = _signup(client)
+    job_id = client.post("/api/spec-jobs", json=SAMPLE_BRIEF, headers=_auth(token)).json()["job_id"]
+
+    res = client.post(
+        f"/api/spec-jobs/{job_id}/clarify",
+        json={"answers": [{"key": "audience", "question": "Who is this for?", "answer": "Teams"}]},
+        headers=_auth(token),
+    )
+    assert res.status_code == 409
+
+
+def test_submit_clarification_resumes_generation(client, monkeypatch):
+    token = _signup(client)
+    job_id = client.post("/api/spec-jobs", json=SAMPLE_BRIEF, headers=_auth(token)).json()["job_id"]
+
+    calls = []
+    monkeypatch.setattr(
+        "blueprint_agents.api.app.run_job", lambda job_id, store: calls.append(job_id)
+    )
+
+    import blueprint_agents.api.app as app_module
+    from blueprint_agents.schemas.intake import ClarifyingQuestion
+
+    app_module.store.update(
+        job_id,
+        status="needs_input",
+        clarifying_questions=[ClarifyingQuestion(key="audience", question="Who is this for?", choices=["Teams"])],
+    )
+
+    get_before = client.get(f"/api/spec-jobs/{job_id}", headers=_auth(token))
+    assert get_before.json()["status"] == "needs_input"
+    assert get_before.json()["clarifying_questions"][0]["key"] == "audience"
+
+    res = client.post(
+        f"/api/spec-jobs/{job_id}/clarify",
+        json={"answers": [{"key": "audience", "question": "Who is this for?", "answer": "Teams"}]},
+        headers=_auth(token),
+    )
+    assert res.status_code == 202
+    assert res.json()["status"] == "pending"
+    assert calls == [job_id]
+
+    get_after = client.get(f"/api/spec-jobs/{job_id}", headers=_auth(token))
+    assert get_after.json()["status"] == "pending"
+    assert get_after.json()["brief"]["clarifications"] == [
+        {"key": "audience", "question": "Who is this for?", "answer": "Teams"}
+    ]
+
+
+def test_list_titles_for_user_includes_soft_deleted_and_excludes_other_users(client):
+    from blueprint_agents.schemas.common import Section, Spec
+
+    def _spec(title):
+        return Spec(title=title, summary="summary", sections=[
+            Section(id="problem", num="01", title="Problem and target user", lead="lead", groups=[])
+        ])
+
+    import blueprint_agents.api.app as app_module
+
+    token_a = _signup(client, "a@example.com")
+    token_b = _signup(client, "b@example.com")
+
+    job_1 = client.post("/api/spec-jobs", json=SAMPLE_BRIEF, headers=_auth(token_a)).json()["job_id"]
+    job_2 = client.post("/api/spec-jobs", json=SAMPLE_BRIEF, headers=_auth(token_a)).json()["job_id"]
+    job_other_user = client.post("/api/spec-jobs", json=SAMPLE_BRIEF, headers=_auth(token_b)).json()["job_id"]
+
+    app_module.store.update(job_1, status="done", spec=_spec("Ledgerbird"))
+    app_module.store.update(job_2, status="done", spec=_spec("Tabsy"))
+    app_module.store.update(job_other_user, status="done", spec=_spec("OtherUsersProduct"))
+    client.delete(f"/api/spec-jobs/{job_2}", headers=_auth(token_a))
+
+    titles = app_module.store.list_titles_for_user(
+        client.get("/api/auth/me", headers=_auth(token_a)).json()["id"]
+    )
+    assert set(titles) == {"Ledgerbird", "Tabsy"}
+
+
+def test_cannot_clarify_another_users_job(client):
+    token_a = _signup(client, "a@example.com")
+    token_b = _signup(client, "b@example.com")
+    job_id = client.post("/api/spec-jobs", json=SAMPLE_BRIEF, headers=_auth(token_a)).json()["job_id"]
+
+    res = client.post(
+        f"/api/spec-jobs/{job_id}/clarify",
+        json={"answers": []},
+        headers=_auth(token_b),
+    )
+    assert res.status_code == 404

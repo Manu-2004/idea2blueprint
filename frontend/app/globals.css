@@ -284,3 +284,27 @@ textarea.input { min-height: 90px; resize: vertical; }
   0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 55%, transparent); }
   50% { box-shadow: 0 0 16px 3px color-mix(in srgb, var(--color-accent) 55%, transparent); }
 }
+
+/* — generating screen: sequential step glow — */
+@keyframes gen-orb-pulse {
+  0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.85; transform: translate(-50%, -50%) scale(1.08); }
+}
+@keyframes gen-ring-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 45%, transparent), 0 0 10px 1px color-mix(in srgb, var(--color-accent) 55%, transparent); }
+  70% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--color-accent) 0%, transparent), 0 0 14px 2px color-mix(in srgb, var(--color-accent) 65%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 0%, transparent), 0 0 10px 1px color-mix(in srgb, var(--color-accent) 55%, transparent); }
+}
+@keyframes gen-dot-flash {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 0%, transparent); transform: scale(1.2); }
+  35% { box-shadow: 0 0 18px 5px color-mix(in srgb, var(--color-accent) 75%, transparent); transform: scale(1); }
+  100% { box-shadow: 0 0 6px 0 color-mix(in srgb, var(--color-accent) 45%, transparent); transform: scale(1); }
+}
+@keyframes gen-text-glow {
+  0%, 100% { text-shadow: 0 0 0 color-mix(in srgb, var(--color-accent) 0%, transparent); }
+  50% { text-shadow: 0 0 10px color-mix(in srgb, var(--color-accent) 55%, transparent); }
+}
+@keyframes gen-line-shimmer {
+  0% { background-position: -100% 0; }
+  100% { background-position: 200% 0; }
+}

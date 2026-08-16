@@ -3,7 +3,7 @@ from blueprint_agents.schemas.review import Issue
 
 
 def format_brief(brief: Brief) -> str:
-    return (
+    text = (
         f"Idea: {brief.idea}\n"
         f"Who it's for: {brief.who}\n"
         f"Problem it solves: {brief.problem}\n"
@@ -12,6 +12,10 @@ def format_brief(brief: Brief) -> str:
         f"Timeline and budget: {brief.budget}\n"
         f"Technical comfort: {brief.comfort}"
     )
+    if brief.clarifications:
+        answers = "\n".join(f"- {c.question} -> {c.answer}" for c in brief.clarifications)
+        text += "\n\nAnswers to prior clarifying questions:\n" + answers
+    return text
 
 
 def format_issues(issues: list[Issue], agent: str) -> str:
@@ -25,4 +29,18 @@ def format_issues(issues: list[Issue], agent: str) -> str:
     return (
         "\n\nThe reviewer flagged issues with your previous draft. Make a targeted revision "
         "that fixes these specifically — don't start over from scratch:\n" + lines
+    )
+
+
+def format_used_titles(used_titles: list[str]) -> str:
+    """Render the product names this user has already generated in past specs, so the
+    Product agent doesn't propose one of them again. Returns "" if none, so callers can
+    append unconditionally."""
+
+    if not used_titles:
+        return ""
+    lines = "\n".join(f"- {title}" for title in used_titles)
+    return (
+        "\n\nThis user has already generated specs with these product names — pick a name "
+        "that is clearly different from all of them, not a minor variation:\n" + lines
     )

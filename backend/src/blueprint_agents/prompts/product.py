@@ -1,4 +1,4 @@
-from blueprint_agents.prompts.shared import format_brief, format_issues
+from blueprint_agents.prompts.shared import format_brief, format_issues, format_used_titles
 from blueprint_agents.schemas.brief import Brief
 from blueprint_agents.schemas.product import ProductOutput
 from blueprint_agents.schemas.review import Issue
@@ -24,7 +24,9 @@ not a literal mashup of the feature and the audience. Avoid the standard AI-nami
 "Hub", "Sync", "Pilot", "Genius", "Wise", "AI"), and no "[Feature] for [Audience]" template. \
 Instead find one word or invented word that captures the product's angle or personality — \
 the kind of name that could survive as a logo. Test it: if the name could be swapped onto a \
-different, unrelated product without anyone noticing, it's too generic — try again. Write a \
+different, unrelated product without anyone noticing, it's too generic — try again. If the \
+user message lists product names already used before, the new name must be clearly \
+different from every one of them. Write a \
 separate one-line summary for the spec header that does the literal "who it's for and its \
 scope" job the name itself is no longer doing (platform, timeline), in the terse, confident \
 register of the rest of the spec.
@@ -36,9 +38,15 @@ say something that would be false for a different product. Write in the terse, c
 prose of a real spec document, not a listicle of platitudes."""
 
 
-def build_user_message(brief: Brief, prior: ProductOutput | None = None, issues: list[Issue] | None = None) -> str:
+def build_user_message(
+    brief: Brief,
+    prior: ProductOutput | None = None,
+    issues: list[Issue] | None = None,
+    used_titles: list[str] | None = None,
+) -> str:
     message = f"Brief:\n{format_brief(brief)}"
     if prior is not None:
         message += f"\n\nYour previous draft (as JSON):\n{prior.model_dump_json(indent=2)}"
         message += format_issues(issues or [], "product")
+    message += format_used_titles(used_titles or [])
     return message

@@ -44,6 +44,7 @@ def run_job(job_id: str, store: JobStore) -> None:
 
     initial_state = {
         "brief": job.brief,
+        "used_titles": store.list_titles_for_user(job.user_id),
         "revision_round": 0,
         "max_revision_rounds": job.max_revision_rounds,
         "trace": [],
@@ -68,6 +69,11 @@ def run_job(job_id: str, store: JobStore) -> None:
                 error=JobError(type="irrelevant_input", message=intake.reason),
             )
             logger.info("spec job %s rejected at intake: %s", job_id, intake.reason)
+            return
+
+        if intake is not None and intake.needs_clarification and not job.brief.clarifications:
+            store.update(job_id, status="needs_input", clarifying_questions=intake.questions)
+            logger.info("spec job %s paused for clarification (%d questions)", job_id, len(intake.questions))
             return
 
         spec = result_state["spec"]

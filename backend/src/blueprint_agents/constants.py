@@ -26,3 +26,8 @@ SECTION_META: dict[str, SectionMeta] = {
 }
 
 DEFAULT_MAX_REVISION_ROUNDS = 2
+
+# How many times the Product agent may retry title generation within a single node call if
+# it proposes a name the user has already used on a previous spec. Bounded so a stubborn LLM
+# can't loop forever — after this many attempts the graph proceeds with whatever it has.
+MAX_TITLE_ATTEMPTS = 3

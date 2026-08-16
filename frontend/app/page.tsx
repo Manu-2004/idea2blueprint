@@ -11,11 +11,12 @@ import {
   getToken,
   listSpecJobs,
   saveDraft,
+  submitClarification,
   updateDraft,
 } from "../lib/api";
 import { login, logout as logoutRequest, me, signup } from "../lib/auth";
 import { QUESTIONS, SAMPLE_SPEC, TEMPLATES } from "../lib/data";
-import type { AuthMode, FormFields, HandoffResponse, JobError, JobStatus, Screen, Spec, SpecJobSummary, User } from "../lib/types";
+import type { AuthMode, ClarificationAnswer, ClarifyingQuestion, FormFields, HandoffResponse, JobError, JobStatus, Screen, Spec, SpecJobSummary, User } from "../lib/types";
 import { Landing } from "../components/Landing";
 import { AuthScreen } from "../components/AuthScreen";
 import { AppShell } from "../components/AppShell";
@@ -23,6 +24,7 @@ import { Dashboard } from "../components/Dashboard";
 import { Templates } from "../components/Templates";
 import { NewSpecForm } from "../components/NewSpecForm";
 import { Generating } from "../components/Generating";
+import { ClarifyQuestions } from "../components/ClarifyQuestions";
 import { SpecView } from "../components/SpecView";
 import { ExportDialog } from "../components/ExportDialog";
 import { AgentKitDialog } from "../components/AgentKitDialog";
@@ -47,6 +49,9 @@ export default function Home() {
   const [maxRevisionRounds, setMaxRevisionRounds] = useState(0);
   const [spec, setSpec] = useState<Spec | null>(null);
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  const [clarifyJobId, setClarifyJobId] = useState<string | null>(null);
+  const [clarifyQuestions, setClarifyQuestions] = useState<ClarifyingQuestion[]>([]);
+  const [clarifySubmitting, setClarifySubmitting] = useState(false);
   const [handoff, setHandoff] = useState<HandoffResponse | null>(null);
   const [specs, setSpecs] = useState<SpecJobSummary[]>([]);
   const [specsLoading, setSpecsLoading] = useState(false);
@@ -182,6 +187,13 @@ export default function Home() {
           activeJobIdRef.current = null;
           setGenError(job.error ?? { type: "internal_error", message: "Something went wrong generating the spec." });
           refreshSpecs();
+        } else if (job.status === "needs_input") {
+          if (timerRef.current) clearInterval(timerRef.current);
+          activeJobIdRef.current = null;
+          setClarifyJobId(jobId);
+          setClarifyQuestions(job.clarifying_questions ?? []);
+          go("clarify");
+          refreshSpecs();
         }
       } catch {
         if (activeJobIdRef.current !== jobId) return;
@@ -222,6 +234,28 @@ export default function Home() {
       });
   };
 
+  const handleSubmitClarification = (answers: ClarificationAnswer[]) => {
+    if (!clarifyJobId) return;
+    setClarifySubmitting(true);
+    submitClarification(clarifyJobId, answers)
+      .then(({ job_id }) => {
+        setClarifySubmitting(false);
+        setClarifyJobId(null);
+        setClarifyQuestions([]);
+        setGenStep(0);
+        setGenError(null);
+        setRevisionRound(0);
+        setMaxRevisionRounds(0);
+        setScreen("generating");
+        refreshSpecs();
+        pollJob(job_id);
+      })
+      .catch(() => {
+        setClarifySubmitting(false);
+        pushToast("Couldn't submit your answers — try again.", "error");
+      });
+  };
+
   const handleSaveDraft = () => {
     setDraftStatus("saving");
     const save = draftId ? updateDraft(draftId, form) : saveDraft(form);
@@ -259,6 +293,12 @@ export default function Home() {
           setCurrentJobId(id);
           setHandoff(job.agent_prompt && job.agents_md ? { agent_prompt: job.agent_prompt, agents_md: job.agents_md } : null);
           go("spec");
+          return;
+        }
+        if (job.status === "needs_input") {
+          setClarifyJobId(id);
+          setClarifyQuestions(job.clarifying_questions ?? []);
+          go("clarify");
           return;
         }
         setGenStep(job.progress.step);
@@ -325,7 +365,7 @@ export default function Home() {
         />
       )}
 
-      {(screen === "dashboard" || screen === "templates" || screen === "new" || screen === "generating" || screen === "spec") && (
+      {(screen === "dashboard" || screen === "templates" || screen === "new" || screen === "generating" || screen === "clarify" || screen === "spec") && (
         <AppShell screen={screen} user={user} specsUsed={specsUsedThisMonth} onGo={go} onNew={startNewSpec} onLogout={handleLogout}>
           {screen === "dashboard" && (
             <Dashboard
@@ -360,6 +400,13 @@ export default function Home() {
               onEdit={() => go("new")}
               revisionRound={revisionRound}
               maxRevisionRounds={maxRevisionRounds}
+            />
+          )}
+          {screen === "clarify" && (
+            <ClarifyQuestions
+              questions={clarifyQuestions}
+              submitting={clarifySubmitting}
+              onSubmit={handleSubmitClarification}
             />
           )}
           {screen === "spec" && spec && (

@@ -1,4 +1,4 @@
-import type { FormFields, HandoffResponse, JobCreateResponse, JobStatusResponse, SpecJobSummary, SpecUsage } from "./types";
+import type { ClarificationAnswer, FormFields, HandoffResponse, JobCreateResponse, JobStatusResponse, SpecJobSummary, SpecUsage } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 const TOKEN_KEY = "i2b_auth_token";
@@ -76,6 +76,13 @@ export async function updateDraft(jobId: string, brief: FormFields): Promise<Job
 export async function generateFromDraft(jobId: string): Promise<JobCreateResponse> {
   return apiFetch<JobCreateResponse>(`/api/spec-jobs/${jobId}/generate`, {
     method: "POST",
+  });
+}
+
+export async function submitClarification(jobId: string, answers: ClarificationAnswer[]): Promise<JobCreateResponse> {
+  return apiFetch<JobCreateResponse>(`/api/spec-jobs/${jobId}/clarify`, {
+    method: "POST",
+    body: JSON.stringify({ answers }),
   });
 }
 
