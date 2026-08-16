@@ -11,6 +11,7 @@ from blueprint_agents.api.progress import compute_step
 from blueprint_agents.api.runner import run_job
 from blueprint_agents.api.schemas import (
     AuthResponse,
+    HandoffResponse,
     JobCreateResponse,
     JobStatusResponse,
     LoginRequest,
@@ -22,6 +23,8 @@ from blueprint_agents.api.schemas import (
 from blueprint_agents.auth import AuthStore, EmailAlreadyRegistered, User
 from blueprint_agents.config import get_settings
 from blueprint_agents.db import Database
+from blueprint_agents.handoff import build_agent_prompt, generate_handoff
+from blueprint_agents.llm import default_llm_factory
 from blueprint_agents.schemas.brief import Brief
 
 logging.basicConfig(level=logging.INFO)
@@ -155,6 +158,23 @@ def generate_from_draft(
     return JobCreateResponse(job_id=job.id, status="pending")
 
 
+@app.post("/api/spec-jobs/{job_id}/handoff", response_model=HandoffResponse)
+def create_handoff(job_id: str, current_user: User = Depends(get_current_user)) -> HandoffResponse:
+    """Generates (or regenerates) the coding-agent kickoff kit for a finished spec: a
+    task-broken-down prompt plus an AGENTS.md. Runs inline rather than via BackgroundTasks —
+    unlike a full spec run, this is a single LLM call, and FastAPI already dispatches sync
+    `def` path operations like this one to a worker thread, so it doesn't block the event loop."""
+
+    job = _get_owned_job_or_404(job_id, current_user)
+    if job.status != "done" or job.spec is None:
+        raise HTTPException(status_code=409, detail="Generate the spec before creating a coding-agent handoff.")
+
+    handoff = generate_handoff(job.brief, job.spec, default_llm_factory)
+    agent_prompt = build_agent_prompt(job.spec, handoff)
+    store.update(job_id, agent_prompt=agent_prompt, agents_md=handoff.agents_md)
+    return HandoffResponse(agent_prompt=agent_prompt, agents_md=handoff.agents_md)
+
+
 @app.delete("/api/spec-jobs/{job_id}", status_code=204)
 def delete_spec_job(job_id: str, current_user: User = Depends(get_current_user)) -> Response:
     _get_owned_job_or_404(job_id, current_user)
@@ -191,6 +211,8 @@ def get_spec_job(job_id: str, current_user: User = Depends(get_current_user)) ->
         brief=job.brief,
         spec=job.spec,
         error=job.error,
+        agent_prompt=job.agent_prompt,
+        agents_md=job.agents_md,
         created_at=job.created_at,
         updated_at=job.updated_at,
     )

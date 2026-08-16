@@ -63,3 +63,12 @@ class Database:
                 "CREATE INDEX IF NOT EXISTS idx_spec_jobs_user_updated "
                 "ON spec_jobs(user_id, updated_at DESC)"
             )
+            # Added after the initial release — `CREATE TABLE IF NOT EXISTS` above is a no-op
+            # against an existing db file, so new columns need their own idempotent migration.
+            self._add_column_if_missing("spec_jobs", "agent_prompt_md", "TEXT")
+            self._add_column_if_missing("spec_jobs", "agents_md", "TEXT")
+
+    def _add_column_if_missing(self, table: str, column: str, sql_type: str) -> None:
+        existing = {row["name"] for row in self.conn.execute(f"PRAGMA table_info({table})")}
+        if column not in existing:
+            self.conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {sql_type}")

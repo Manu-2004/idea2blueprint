@@ -24,6 +24,8 @@ class Job:
         revision_round: int = 0,
         spec: Optional[Spec] = None,
         error: Optional[JobError] = None,
+        agent_prompt: Optional[str] = None,
+        agents_md: Optional[str] = None,
         created_at: Optional[datetime] = None,
         updated_at: Optional[datetime] = None,
     ):
@@ -38,6 +40,8 @@ class Job:
         self.max_revision_rounds = max_revision_rounds
         self.spec = spec
         self.error = error
+        self.agent_prompt = agent_prompt
+        self.agents_md = agents_md
         self.created_at = created_at or now
         self.updated_at = updated_at or now
 
@@ -54,6 +58,8 @@ def _row_to_job(row) -> Job:
         revision_round=row["revision_round"],
         spec=Spec.model_validate_json(row["spec_json"]) if row["spec_json"] else None,
         error=JobError.model_validate_json(row["error_json"]) if row["error_json"] else None,
+        agent_prompt=row["agent_prompt_md"],
+        agents_md=row["agents_md"],
         created_at=datetime.fromisoformat(row["created_at"]),
         updated_at=datetime.fromisoformat(row["updated_at"]),
     )
@@ -82,8 +88,9 @@ class JobStore:
                 """
                 INSERT INTO spec_jobs
                     (id, user_id, title, brief_json, status, spec_json, error_json,
-                     revision_round, max_revision_rounds, events_json, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     revision_round, max_revision_rounds, events_json, agent_prompt_md,
+                     agents_md, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     job.id,
@@ -96,6 +103,8 @@ class JobStore:
                     job.revision_round,
                     job.max_revision_rounds,
                     "[]",
+                    None,
+                    None,
                     job.created_at.isoformat(),
                     job.updated_at.isoformat(),
                 ),
@@ -130,6 +139,8 @@ class JobStore:
             "revision_round": lambda v: v,
             "spec": lambda v: v.model_dump_json() if v is not None else None,
             "error": lambda v: v.model_dump_json() if v is not None else None,
+            "agent_prompt": lambda v: v,
+            "agents_md": lambda v: v,
         }
         columns = {
             "status": "status",
@@ -139,6 +150,8 @@ class JobStore:
             "revision_round": "revision_round",
             "spec": "spec_json",
             "error": "error_json",
+            "agent_prompt": "agent_prompt_md",
+            "agents_md": "agents_md",
         }
         set_clauses = []
         values: list = []

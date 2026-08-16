@@ -44,8 +44,18 @@ class JobStatusResponse(BaseModel):
     brief: Brief
     spec: Optional[Spec] = None
     error: Optional[JobError] = None
+    agent_prompt: Optional[str] = None
+    agents_md: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+
+
+class HandoffResponse(BaseModel):
+    """A coding-agent kickoff kit derived from a finished spec: a task-broken-down prompt
+    ready to hand a coding agent, and an AGENTS.md for the repo it'll be building in."""
+
+    agent_prompt: str
+    agents_md: str
 
 
 class SpecJobSummary(BaseModel):

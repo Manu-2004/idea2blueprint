@@ -5,18 +5,20 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from blueprint_agents.constants import DEFAULT_MAX_REVISION_ROUNDS
 
-AgentName = Literal["intake", "product", "ux", "technical", "reviewer"]
+AgentName = Literal["intake", "product", "ux", "technical", "reviewer", "handoff"]
 
 # The reviewer writes shorter, more mechanical output (a verdict, not prose), so a lower
 # temperature suits it; technical benefits from consistency over creativity too. Product/UX
 # are the sections doing the most freeform prose writing. Intake is a binary classification
-# call, so it gets the lowest temperature of all.
+# call, so it gets the lowest temperature of all. Handoff sits with technical/reviewer — it's
+# translating an already-fixed spec into tasks and an AGENTS.md, not inventing new scope.
 DEFAULT_TEMPERATURES: dict[AgentName, float] = {
     "intake": 0.0,
     "product": 0.5,
     "ux": 0.5,
     "technical": 0.2,
     "reviewer": 0.2,
+    "handoff": 0.2,
 }
 
 
@@ -34,6 +36,7 @@ class Settings(BaseSettings):
     # agents' output, and it only runs 1-3 times per pipeline run — the cheapest place to
     # spend extra model quality.
     openai_model_reviewer: str | None = "gpt-4.1"
+    openai_model_handoff: str | None = None
 
     max_revision_rounds: int = DEFAULT_MAX_REVISION_ROUNDS
 

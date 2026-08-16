@@ -84,8 +84,15 @@ export type JobStatusResponse = {
   brief: FormFields;
   spec: Spec | null;
   error: JobError | null;
+  agent_prompt: string | null;
+  agents_md: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type HandoffResponse = {
+  agent_prompt: string;
+  agents_md: string;
 };
 
 export type SpecJobSummary = {

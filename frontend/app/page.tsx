@@ -14,7 +14,7 @@ import {
 } from "../lib/api";
 import { login, logout as logoutRequest, me, signup } from "../lib/auth";
 import { QUESTIONS, SAMPLE_SPEC, TEMPLATES } from "../lib/data";
-import type { AuthMode, FormFields, JobError, JobStatus, Screen, Spec, SpecJobSummary, User } from "../lib/types";
+import type { AuthMode, FormFields, HandoffResponse, JobError, JobStatus, Screen, Spec, SpecJobSummary, User } from "../lib/types";
 import { Landing } from "../components/Landing";
 import { AuthScreen } from "../components/AuthScreen";
 import { AppShell } from "../components/AppShell";
@@ -24,6 +24,7 @@ import { NewSpecForm } from "../components/NewSpecForm";
 import { Generating } from "../components/Generating";
 import { SpecView } from "../components/SpecView";
 import { ExportDialog } from "../components/ExportDialog";
+import { AgentKitDialog } from "../components/AgentKitDialog";
 import { ToastStack, type ToastItem, type ToastTone } from "../components/Toast";
 
 const POLL_INTERVAL_MS = 2000;
@@ -44,9 +45,12 @@ export default function Home() {
   const [revisionRound, setRevisionRound] = useState(0);
   const [maxRevisionRounds, setMaxRevisionRounds] = useState(0);
   const [spec, setSpec] = useState<Spec | null>(null);
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  const [handoff, setHandoff] = useState<HandoffResponse | null>(null);
   const [specs, setSpecs] = useState<SpecJobSummary[]>([]);
   const [specsLoading, setSpecsLoading] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [showAgentKit, setShowAgentKit] = useState(false);
   const [format, setFormat] = useState("PDF");
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -163,6 +167,8 @@ export default function Home() {
           if (timerRef.current) clearInterval(timerRef.current);
           activeJobIdRef.current = null;
           setSpec(job.spec);
+          setCurrentJobId(jobId);
+          setHandoff(null);
           go("spec");
           refreshSpecs();
           pushToast(`"${job.spec.title}" is ready.`, "success");
@@ -245,6 +251,8 @@ export default function Home() {
         }
         if (job.status === "done" && job.spec) {
           setSpec(job.spec);
+          setCurrentJobId(id);
+          setHandoff(job.agent_prompt && job.agents_md ? { agent_prompt: job.agent_prompt, agents_md: job.agents_md } : null);
           go("spec");
           return;
         }
@@ -274,6 +282,8 @@ export default function Home() {
       setUser(null);
       setSpecs([]);
       setSpec(null);
+      setCurrentJobId(null);
+      setHandoff(null);
       go("landing");
     });
   };
@@ -298,7 +308,7 @@ export default function Home() {
   return (
     <>
       {screen === "landing" && (
-        <Landing onSignup={() => { setAuthMode("signup"); setScreen("auth"); }} onSampleSpec={() => { setSpec(SAMPLE_SPEC); go("spec"); }} />
+        <Landing onSignup={() => { setAuthMode("signup"); setScreen("auth"); }} onSampleSpec={() => { setSpec(SAMPLE_SPEC); setCurrentJobId(null); setHandoff(null); go("spec"); }} />
       )}
 
       {screen === "auth" && (
@@ -354,6 +364,7 @@ export default function Home() {
               sections={spec.sections}
               onRegenerate={() => go("new")}
               onOpenExport={() => setShowExport(true)}
+              onOpenAgentKit={currentJobId ? () => setShowAgentKit(true) : undefined}
             />
           )}
         </AppShell>
@@ -361,6 +372,15 @@ export default function Home() {
 
       {showExport && spec && (
         <ExportDialog spec={spec} format={format} onSelectFormat={setFormat} onClose={() => setShowExport(false)} />
+      )}
+
+      {showAgentKit && currentJobId && (
+        <AgentKitDialog
+          jobId={currentJobId}
+          initial={handoff}
+          onGenerated={setHandoff}
+          onClose={() => setShowAgentKit(false)}
+        />
       )}
 
       <ToastStack toasts={toasts} onDismiss={dismissToast} />

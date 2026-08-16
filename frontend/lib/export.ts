@@ -13,6 +13,10 @@ function triggerDownload(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+export function downloadText(filename: string, content: string): void {
+  triggerDownload(new Blob([content], { type: "text/markdown;charset=utf-8" }), filename);
+}
+
 export function specToMarkdown(spec: Spec): string {
   const lines: string[] = [`# ${spec.title}`, "", spec.summary];
   for (const section of spec.sections) {

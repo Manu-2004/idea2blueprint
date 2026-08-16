@@ -6,12 +6,14 @@ export function SpecView({
   sections,
   onRegenerate,
   onOpenExport,
+  onOpenAgentKit,
 }: {
   title: string;
   summary: string;
   sections: Section[];
   onRegenerate: () => void;
   onOpenExport: () => void;
+  onOpenAgentKit?: () => void;
 }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 216px", gap: 0, alignItems: "start" }}>
@@ -29,6 +31,9 @@ export function SpecView({
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <a href="#" className="btn btn-secondary" onClick={(e) => { e.preventDefault(); onRegenerate(); }}>Regenerate</a>
+            {onOpenAgentKit && (
+              <a href="#" className="btn btn-secondary" onClick={(e) => { e.preventDefault(); onOpenAgentKit(); }}>Agent kit</a>
+            )}
             <a href="#" className="btn btn-primary" onClick={(e) => { e.preventDefault(); onOpenExport(); }}>Download</a>
           </div>
         </div>
