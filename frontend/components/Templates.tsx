@@ -4,6 +4,8 @@ import { ArrowRightIcon } from "./icons";
 const GROUPS: { name: string; keys: string[] }[] = [
   { name: "SaaS dashboard tools", keys: ["saas", "churn", "ops"] },
   { name: "AI assistants and copilots", keys: ["copilot", "research", "onboard"] },
+  { name: "Marketplaces and local services", keys: ["marketplace", "routes", "maintenance"] },
+  { name: "Health and community", keys: ["meds", "volunteer", "waitlist"] },
 ];
 
 export function Templates({ onUseTemplate }: { onUseTemplate: (key: string) => void }) {
