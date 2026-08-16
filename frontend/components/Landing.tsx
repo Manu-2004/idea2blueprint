@@ -21,7 +21,7 @@ export function Landing({
       </div>
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "linear-gradient(105deg, var(--color-bg) 8%, color-mix(in srgb, var(--color-bg) 78%, transparent) 42%, transparent 72%)" }} />
 
-      <div style={{ position: "relative", maxWidth: 1180, margin: "0 auto", padding: "0 40px" }}>
+      <div style={{ position: "relative", maxWidth: 1180, margin: "0 auto", padding: "0 clamp(20px, 6vw, 40px)" }}>
         <nav className="nav" style={{ paddingLeft: 0, paddingRight: 0, paddingTop: 22 }}>
           <span className="nav-brand" style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <Logo />
@@ -29,16 +29,16 @@ export function Landing({
           </span>
         </nav>
 
-        <div style={{ display: "grid", gap: 56, padding: "96px 0 120px", maxWidth: 820, animation: "rise .7s ease both" }}>
+        <div style={{ display: "grid", gap: 56, padding: "clamp(48px, 12vw, 96px) 0 clamp(64px, 14vw, 120px)", maxWidth: 820, animation: "rise .7s ease both" }}>
           <div style={{ display: "grid", gap: 24 }}>
             <span className="tag tag-outline" style={{ justifySelf: "start" }}>Generate build-ready prompts for your project</span>
-            <h1 style={{ fontSize: 76, lineHeight: 1.02, letterSpacing: "-0.03em", margin: 0 }}>
+            <h1 style={{ fontSize: "clamp(38px, 8vw, 76px)", lineHeight: 1.05, letterSpacing: "-0.03em", margin: 0 }}>
               Describe the idea.<br />Get the blueprint.
             </h1>
-            <p style={{ fontSize: 19, lineHeight: 1.6, maxWidth: 560, margin: 0, color: "color-mix(in srgb, var(--color-text) 72%, transparent)", textWrap: "pretty" }}>
+            <p style={{ fontSize: "clamp(15px, 2.4vw, 19px)", lineHeight: 1.6, maxWidth: 560, margin: 0, color: "color-mix(in srgb, var(--color-text) 72%, transparent)", textWrap: "pretty" }}>
               Write your idea in plain words and Idea2Blueprint returns a scoped MVP spec — problem, feature cuts, user stories, flows, stack and risks. Read it here, export as PDF or Markdown, or generate a coding agent kit to start building.
             </p>
-            <div style={{ display: "flex", gap: 12, alignItems: "center", paddingTop: 8 }}>
+            <div className="actions-row" style={{ display: "flex", gap: 12, alignItems: "center", paddingTop: 8 }}>
               <a href="#" className="btn btn-primary" style={{ fontSize: 15, padding: "11px 22px" }} onClick={(e) => { e.preventDefault(); onSignup(); }}>Get started</a>
               <a href="#" className="btn btn-secondary" style={{ fontSize: 15, padding: "11px 22px" }} onClick={(e) => { e.preventDefault(); onSampleSpec(); }}>See a sample spec</a>
             </div>

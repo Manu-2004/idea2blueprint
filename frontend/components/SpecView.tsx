@@ -16,20 +16,20 @@ export function SpecView({
   onOpenAgentKit?: () => void;
 }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 216px", gap: 0, alignItems: "start" }}>
-      <div style={{ padding: "36px 44px 96px", maxWidth: 820 }}>
+    <div className="spec-layout" style={{ display: "grid", gap: 0, alignItems: "start" }}>
+      <div className="page-pad" style={{ paddingTop: "clamp(24px, 5vw, 36px)", maxWidth: 820 }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 24, flexWrap: "wrap", paddingBottom: 28 }}>
           <div style={{ display: "grid", gap: 8 }}>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <span className="tag tag-accent">MVP spec</span>
               <span className="text-muted" style={{ fontSize: 12 }}>v1 · generated 14 Aug 2026</span>
             </div>
-            <h2 style={{ margin: 0, fontSize: 34 }}>{title}</h2>
+            <h2 style={{ margin: 0, fontSize: "clamp(24px, 5vw, 34px)" }}>{title}</h2>
             <p className="text-muted" style={{ fontSize: 14, margin: 0, maxWidth: 560 }}>
               {summary}
             </p>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div className="actions-row" style={{ display: "flex", gap: 8 }}>
             <a href="#" className="btn btn-secondary" onClick={(e) => { e.preventDefault(); onRegenerate(); }}>Regenerate</a>
             <a href="#" className="btn btn-primary" onClick={(e) => { e.preventDefault(); onOpenExport(); }}>Download</a>
             {onOpenAgentKit && (
@@ -65,7 +65,7 @@ export function SpecView({
         </div>
       </div>
 
-      <div style={{ position: "sticky", top: 0, height: "100vh", padding: "44px 20px", display: "grid", gap: 6, alignContent: "start", background: "linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 70%, transparent), transparent 70%)", boxShadow: "inset 1px 0 0 var(--color-divider)" }}>
+      <div className="spec-toc" style={{ position: "sticky", top: 0, height: "100vh", padding: "44px 20px", gap: 6, alignContent: "start", background: "linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 70%, transparent), transparent 70%)", boxShadow: "inset 1px 0 0 var(--color-divider)" }}>
         <span style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 38%, transparent)", padding: "0 10px 8px" }}>Sections</span>
         {sections.map((s) => (
           <a

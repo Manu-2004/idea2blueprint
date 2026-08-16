@@ -46,7 +46,7 @@ export function AuthScreen({
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--color-bg)" }}>
-      <div style={{ position: "relative", overflow: "hidden", minHeight: "100vh", padding: 40, display: "grid", gridTemplateRows: "auto 1fr auto", justifyItems: "start" }}>
+      <div style={{ position: "relative", overflow: "hidden", minHeight: "100vh", padding: "clamp(20px, 6vw, 40px)", display: "grid", gridTemplateRows: "auto 1fr auto", justifyItems: "start" }}>
         <div style={{ position: "absolute", inset: "-10% -20% auto -20%", height: "80vh", filter: "blur(80px)", opacity: 0.65, pointerEvents: "none" }}>
           <div style={{ position: "absolute", inset: 0, height: "38%", top: "14%", background: "linear-gradient(100deg, transparent 10%, var(--color-accent-700) 40%, var(--color-accent) 58%, transparent 82%)", animation: "aurora-a 21s ease-in-out infinite" }} />
           <div style={{ position: "absolute", inset: 0, height: "24%", top: "44%", background: "linear-gradient(80deg, transparent 14%, var(--color-section) 34%, var(--color-accent-400) 58%, transparent 86%)", animation: "aurora-b 27s ease-in-out infinite" }} />

@@ -22,7 +22,7 @@ export function ClarifyQuestions({
   };
 
   return (
-    <div style={{ maxWidth: 640, padding: "56px 44px 96px", display: "grid", gap: 36 }}>
+    <div className="page-pad" style={{ maxWidth: 640, display: "grid", gap: 36 }}>
       <div>
         <h2 style={{ marginBottom: 8, fontSize: 29 }}>A couple of quick questions</h2>
         <p className="text-muted" style={{ fontSize: 14, margin: 0 }}>

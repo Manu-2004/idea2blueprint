@@ -46,7 +46,7 @@ export function Dashboard({
       : `${specs.length} spec${specs.length === 1 ? "" : "s"} so far.`;
 
   return (
-    <div style={{ maxWidth: 1020, padding: "40px 44px 80px", display: "grid", gap: 40 }}>
+    <div className="page-pad" style={{ maxWidth: 1020, display: "grid", gap: 40 }}>
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
         <div>
           <h2 style={{ marginBottom: 6 }}>Your specs</h2>
@@ -94,7 +94,7 @@ export function Dashboard({
 
       <div style={{ display: "grid", gap: 18 }}>
         <h5 style={{ margin: 0, fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 40%, transparent)" }}>Start from a template</h5>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+        <div className="grid-templates" style={{ display: "grid", gap: 14 }}>
           {RECENT_KEYS.map((k) => {
             const t = TEMPLATES[k];
             return (

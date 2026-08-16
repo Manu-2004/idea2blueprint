@@ -20,7 +20,7 @@ export function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismi
   if (toasts.length === 0) return null;
 
   return (
-    <div style={{ position: "fixed", right: 20, bottom: 20, zIndex: 200, display: "grid", gap: 8, maxWidth: 340 }}>
+    <div style={{ position: "fixed", right: 20, bottom: 20, zIndex: 200, display: "grid", gap: 8, justifyItems: "end", maxWidth: "min(340px, calc(100vw - 40px))" }}>
       {toasts.map((t) => (
         <div
           key={t.id}

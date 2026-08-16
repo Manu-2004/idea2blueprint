@@ -38,7 +38,7 @@ export function NewSpecForm({
   };
 
   return (
-    <div style={{ maxWidth: 640, padding: "56px 44px 96px", display: "grid", gap: 36 }}>
+    <div className="page-pad" style={{ maxWidth: 640, display: "grid", gap: 36 }}>
       <div style={{ display: "grid", gap: 14 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
           <span style={{ fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 45%, transparent)" }}>{stepCounter}</span>
@@ -99,7 +99,7 @@ export function NewSpecForm({
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+      <div className="actions-row" style={{ display: "flex", gap: 12, alignItems: "center" }}>
         <a href="#" className="btn btn-primary" style={{ padding: "10px 20px" }} onClick={(e) => { e.preventDefault(); onNext(); }}>{nextLabel}</a>
         <a href="#" className="btn btn-secondary" onClick={(e) => { e.preventDefault(); onSaveDraft(); }}>Save draft</a>
         <a href="#" className="btn btn-secondary" onClick={(e) => { e.preventDefault(); onBack(); }}>{backLabel}</a>

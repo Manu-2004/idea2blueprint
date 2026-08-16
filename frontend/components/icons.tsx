@@ -23,6 +23,22 @@ export function TrashIcon({ size = 15, strokeWidth = 1.6 }: { size?: number; str
   );
 }
 
+export function MenuIcon({ size = 18, strokeWidth = 1.8 }: { size?: number; strokeWidth?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round">
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  );
+}
+
+export function CloseIcon({ size = 18, strokeWidth = 1.8 }: { size?: number; strokeWidth?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round">
+      <path d="M5 5l14 14M19 5 5 19" />
+    </svg>
+  );
+}
+
 export function SpinnerIcon({ size = 18 }: { size?: number }) {
   return (
     <svg

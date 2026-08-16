@@ -10,7 +10,7 @@ const GROUPS: { name: string; keys: string[] }[] = [
 
 export function Templates({ onUseTemplate }: { onUseTemplate: (key: string) => void }) {
   return (
-    <div style={{ maxWidth: 840, padding: "56px 44px 96px", display: "grid", gap: 52 }}>
+    <div className="page-pad" style={{ maxWidth: 840, display: "grid", gap: 52 }}>
       <div style={{ maxWidth: 460 }}>
         <h2 style={{ marginBottom: 8 }}>Templates</h2>
         <p className="text-muted" style={{ fontSize: 14, margin: 0 }}>Pick one to fill the form with a worked answer set.</p>
