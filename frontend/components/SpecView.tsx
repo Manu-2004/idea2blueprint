@@ -31,10 +31,10 @@ export function SpecView({
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <a href="#" className="btn btn-secondary" onClick={(e) => { e.preventDefault(); onRegenerate(); }}>Regenerate</a>
-            {onOpenAgentKit && (
-              <a href="#" className="btn btn-secondary" onClick={(e) => { e.preventDefault(); onOpenAgentKit(); }}>Agent kit</a>
-            )}
             <a href="#" className="btn btn-primary" onClick={(e) => { e.preventDefault(); onOpenExport(); }}>Download</a>
+            {onOpenAgentKit && (
+              <a href="#" className="btn btn-primary btn-glow" onClick={(e) => { e.preventDefault(); onOpenAgentKit(); }}>Agent kit</a>
+            )}
           </div>
         </div>
         <hr className="hr" style={{ margin: "0 0 32px" }} />

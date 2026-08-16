@@ -31,12 +31,12 @@ export function Landing({
 
         <div style={{ display: "grid", gap: 56, padding: "96px 0 120px", maxWidth: 820, animation: "rise .7s ease both" }}>
           <div style={{ display: "grid", gap: 24 }}>
-            <span className="tag tag-outline" style={{ justifySelf: "start" }}>Idea to MVP spec, in one pass</span>
+            <span className="tag tag-outline" style={{ justifySelf: "start" }}>Generate build-ready prompts for your project</span>
             <h1 style={{ fontSize: 76, lineHeight: 1.02, letterSpacing: "-0.03em", margin: 0 }}>
               Describe the idea.<br />Get the blueprint.
             </h1>
             <p style={{ fontSize: 19, lineHeight: 1.6, maxWidth: 560, margin: 0, color: "color-mix(in srgb, var(--color-text) 72%, transparent)", textWrap: "pretty" }}>
-              Write your idea in plain words, answer six questions, and Idea2Blueprint returns a scoped MVP spec — problem, feature cuts, user stories, flows, stack and risks. Read it here, or take it away as PDF or Markdown.
+              Write your idea in plain words and Idea2Blueprint returns a scoped MVP spec — problem, feature cuts, user stories, flows, stack and risks. Read it here, export as PDF or Markdown, or generate a coding agent kit to start building.
             </p>
             <div style={{ display: "flex", gap: 12, alignItems: "center", paddingTop: 8 }}>
               <a href="#" className="btn btn-primary" style={{ fontSize: 15, padding: "11px 22px" }} onClick={(e) => { e.preventDefault(); onSignup(); }}>Get started</a>
