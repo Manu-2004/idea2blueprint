@@ -51,7 +51,7 @@ export function Dashboard({
           <h2 style={{ marginBottom: 6 }}>Your specs</h2>
           <p className="text-muted" style={{ fontSize: 14, margin: 0 }}>{subtitle}</p>
         </div>
-        <a href="#" className="btn btn-secondary" onClick={(e) => { e.preventDefault(); onGoTemplates(); }}>Browse templates</a>
+        
       </div>
 
       {specs.length > 0 && (

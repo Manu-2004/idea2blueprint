@@ -67,6 +67,9 @@ class Database:
             # against an existing db file, so new columns need their own idempotent migration.
             self._add_column_if_missing("spec_jobs", "agent_prompt_md", "TEXT")
             self._add_column_if_missing("spec_jobs", "agents_md", "TEXT")
+            # Soft-delete marker: deleting a spec must not shrink the monthly usage count
+            # (which counts everything ever created this month), only hide it from listings.
+            self._add_column_if_missing("spec_jobs", "deleted_at", "TEXT")
 
     def _add_column_if_missing(self, table: str, column: str, sql_type: str) -> None:
         existing = {row["name"] for row in self.conn.execute(f"PRAGMA table_info({table})")}

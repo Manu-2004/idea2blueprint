@@ -69,6 +69,13 @@ class SpecJobSummary(BaseModel):
     updated_at: datetime
 
 
+class UsageResponse(BaseModel):
+    """Monthly spec-generation quota usage — counts every spec created this calendar
+    month, including ones the user has since deleted."""
+
+    specs_used_this_month: int
+
+
 class UserResponse(BaseModel):
     id: str
     name: str

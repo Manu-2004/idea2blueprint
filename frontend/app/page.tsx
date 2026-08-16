@@ -7,6 +7,7 @@ import {
   deleteSpecJob,
   generateFromDraft,
   getSpecJob,
+  getSpecUsage,
   getToken,
   listSpecJobs,
   saveDraft,
@@ -49,6 +50,7 @@ export default function Home() {
   const [handoff, setHandoff] = useState<HandoffResponse | null>(null);
   const [specs, setSpecs] = useState<SpecJobSummary[]>([]);
   const [specsLoading, setSpecsLoading] = useState(false);
+  const [specsUsedThisMonth, setSpecsUsedThisMonth] = useState(0);
   const [showExport, setShowExport] = useState(false);
   const [showAgentKit, setShowAgentKit] = useState(false);
   const [format, setFormat] = useState("PDF");
@@ -88,6 +90,9 @@ export default function Home() {
       .then(setSpecs)
       .catch(() => setSpecs([]))
       .finally(() => setSpecsLoading(false));
+    getSpecUsage()
+      .then((usage) => setSpecsUsedThisMonth(usage.specs_used_this_month))
+      .catch(() => {});
   };
 
   useEffect(() => {
@@ -321,7 +326,7 @@ export default function Home() {
       )}
 
       {(screen === "dashboard" || screen === "templates" || screen === "new" || screen === "generating" || screen === "spec") && (
-        <AppShell screen={screen} user={user} specsUsed={specs.length} onGo={go} onNew={startNewSpec} onLogout={handleLogout}>
+        <AppShell screen={screen} user={user} specsUsed={specsUsedThisMonth} onGo={go} onNew={startNewSpec} onLogout={handleLogout}>
           {screen === "dashboard" && (
             <Dashboard
               specs={specs}

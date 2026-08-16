@@ -113,20 +113,38 @@ class JobStore:
 
     def get(self, job_id: str) -> Optional[Job]:
         with self._db.lock:
-            row = self._db.conn.execute("SELECT * FROM spec_jobs WHERE id = ?", (job_id,)).fetchone()
+            row = self._db.conn.execute(
+                "SELECT * FROM spec_jobs WHERE id = ? AND deleted_at IS NULL", (job_id,)
+            ).fetchone()
         return _row_to_job(row) if row is not None else None
 
     def list_for_user(self, user_id: str) -> list[Job]:
         with self._db.lock:
             rows = self._db.conn.execute(
-                "SELECT * FROM spec_jobs WHERE user_id = ? ORDER BY updated_at DESC",
+                "SELECT * FROM spec_jobs WHERE user_id = ? AND deleted_at IS NULL ORDER BY updated_at DESC",
                 (user_id,),
             ).fetchall()
         return [_row_to_job(row) for row in rows]
 
     def delete(self, job_id: str) -> None:
+        # Soft delete: a deleted spec still counts toward the month it was generated in,
+        # it just drops out of listings. A hard DELETE would let deleting specs lower the
+        # "specs used this month" quota display, which is wrong.
         with self._db.lock, self._db.conn:
-            self._db.conn.execute("DELETE FROM spec_jobs WHERE id = ?", (job_id,))
+            self._db.conn.execute(
+                "UPDATE spec_jobs SET deleted_at = ? WHERE id = ?",
+                (datetime.now(timezone.utc).isoformat(), job_id),
+            )
+
+    def count_created_since(self, user_id: str, since: datetime) -> int:
+        """Counts every job created on/after `since` for quota purposes, including ones
+        since soft-deleted — deleting a spec must not free up quota for the month."""
+        with self._db.lock:
+            row = self._db.conn.execute(
+                "SELECT COUNT(*) AS n FROM spec_jobs WHERE user_id = ? AND created_at >= ?",
+                (user_id, since.isoformat()),
+            ).fetchone()
+        return row["n"]
 
     def update(self, job_id: str, **fields) -> None:
         if not fields:

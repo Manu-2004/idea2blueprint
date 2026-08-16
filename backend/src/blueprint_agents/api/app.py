@@ -1,5 +1,6 @@
 import logging
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Response
@@ -18,6 +19,7 @@ from blueprint_agents.api.schemas import (
     ProgressInfo,
     SignupRequest,
     SpecJobSummary,
+    UsageResponse,
     UserResponse,
 )
 from blueprint_agents.auth import AuthStore, EmailAlreadyRegistered, User
@@ -195,6 +197,13 @@ def list_spec_jobs(current_user: User = Depends(get_current_user)) -> list[SpecJ
         )
         for job in jobs
     ]
+
+
+@app.get("/api/spec-jobs/usage", response_model=UsageResponse)
+def get_spec_usage(current_user: User = Depends(get_current_user)) -> UsageResponse:
+    since = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    count = store.count_created_since(current_user.id, since)
+    return UsageResponse(specs_used_this_month=count)
 
 
 @app.get("/api/spec-jobs/{job_id}", response_model=JobStatusResponse)

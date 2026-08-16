@@ -103,6 +103,10 @@ export type SpecJobSummary = {
   updated_at: string;
 };
 
+export type SpecUsage = {
+  specs_used_this_month: number;
+};
+
 export type User = {
   id: string;
   name: string;

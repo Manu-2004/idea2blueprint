@@ -1,4 +1,4 @@
-import type { FormFields, HandoffResponse, JobCreateResponse, JobStatusResponse, SpecJobSummary } from "./types";
+import type { FormFields, HandoffResponse, JobCreateResponse, JobStatusResponse, SpecJobSummary, SpecUsage } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 const TOKEN_KEY = "i2b_auth_token";
@@ -53,6 +53,10 @@ export async function listSpecJobs(): Promise<SpecJobSummary[]> {
 
 export async function deleteSpecJob(jobId: string): Promise<void> {
   return apiFetch<void>(`/api/spec-jobs/${jobId}`, { method: "DELETE" });
+}
+
+export async function getSpecUsage(): Promise<SpecUsage> {
+  return apiFetch<SpecUsage>("/api/spec-jobs/usage");
 }
 
 export async function saveDraft(brief: FormFields): Promise<JobCreateResponse> {
